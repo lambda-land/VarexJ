@@ -1,8 +1,12 @@
 package gov.nasa.jpf.vm.va;
 
+import gov.nasa.jpf.vm.MJIEnv;
+import gov.nasa.jpf.vm.Types;
+
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.*;
 
 import cmu.conditional.BiFunction;
 import cmu.conditional.ChoiceFactory;
@@ -12,8 +16,6 @@ import cmu.conditional.One;
 import cmu.conditional.VoidBiFunction;
 import de.fosd.typechef.featureexpr.FeatureExpr;
 import de.fosd.typechef.featureexpr.FeatureExprFactory;
-import gov.nasa.jpf.vm.MJIEnv;
-import gov.nasa.jpf.vm.Types;
 
 /**
  * Stack implementation where locals are separated from stack.<br>
@@ -41,6 +43,8 @@ public class StackHandler implements Cloneable, IStackHandler {
 	public int length = 0;
 
 	public FeatureExpr stackCTX;
+	
+	public Conditional<Entry> numsOP;
 	
 	/* (non-Javadoc)
 	 * @see gov.nasa.jpf.vm.IStackHandler#getStackWidth()
@@ -641,12 +645,39 @@ public class StackHandler implements Cloneable, IStackHandler {
 		return stack.map(GetTop);
 	}
 	
+	public static Vector<Integer> res = new Vector<Integer>();
+	public static int numbers = 0;
 	private static final Function<Stack, Integer> GetTop = new Function<Stack, Integer>() {
 		@Override
 		public Integer apply(final Stack y) {
+			res.addElement(y.top);
 			return y.top;
 		}
 	};
+	
+	//calculate the min, max, ave of Vstack elements
+	public Vector<Integer> numOP(){
+		res = new Vector<Integer>();
+		this.getTop();
+		Vector<Integer> tmp = new Vector<Integer>();
+		Integer size = res.size();
+		Integer max = 0, min = res.get(0);
+		Integer ave = 0;
+		for(int i = 0 ; i <size; i++){
+			if(res.get(i) > max){
+				max = res.get(i);
+			}
+			if(res.get(i) < min){
+				min = res.get(i);
+			}
+			ave += res.get(i);
+		}
+		tmp.addElement(size);
+		tmp.addElement(min);
+		tmp.addElement(max);
+		tmp.addElement(ave/size);
+		return tmp;
+	}
 
 	/* (non-Javadoc)
 	 * @see gov.nasa.jpf.vm.IStackHandler#setTop(de.fosd.typechef.featureexpr.FeatureExpr, int)
