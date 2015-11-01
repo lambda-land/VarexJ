@@ -46,6 +46,12 @@ public class StackHandler implements Cloneable, IStackHandler {
 	
 	public Conditional<Entry> numsOP;
 	
+	//*** dataCollect class object***//
+	public dataCollect c;
+	
+	static LinkedList<StackHandler> q = new LinkedList<StackHandler>();
+	
+	
 	/* (non-Javadoc)
 	 * @see gov.nasa.jpf.vm.IStackHandler#getStackWidth()
 	 */
@@ -75,6 +81,8 @@ public class StackHandler implements Cloneable, IStackHandler {
 		return string.toString();
 	}
 	
+	/* static vector to */ 
+	
 	private static final One<Entry> nullValue = new One<>(new Entry(MJIEnv.NULL, false)); 
 
 	@SuppressWarnings("unchecked")
@@ -87,6 +95,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 		Arrays.fill(locals, nullValue);
 		stack = new One<>(new Stack(nOperands));
 		stackCTX = ctx;
+		q.addLast(this);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -656,10 +665,9 @@ public class StackHandler implements Cloneable, IStackHandler {
 	};
 	
 	//calculate the min, max, ave of Vstack elements
-	public Vector<Integer> numOP(){
+	public dataCollect numOP(){
 		res = new Vector<Integer>();
 		this.getTop();
-		Vector<Integer> tmp = new Vector<Integer>();
 		Integer size = res.size();
 		Integer max = 0, min = res.get(0);
 		Integer ave = 0;
@@ -670,13 +678,10 @@ public class StackHandler implements Cloneable, IStackHandler {
 			if(res.get(i) < min){
 				min = res.get(i);
 			}
-			ave += res.get(i);
+			ave += res.get(i)+1;
 		}
-		tmp.addElement(size);
-		tmp.addElement(min);
-		tmp.addElement(max);
-		tmp.addElement(ave/size);
-		return tmp;
+		this.c = new dataCollect(size, min+1, max+1, ave/size);
+		return c;
 	}
 
 	/* (non-Javadoc)

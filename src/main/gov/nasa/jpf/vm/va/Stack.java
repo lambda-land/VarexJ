@@ -114,7 +114,7 @@ public class Stack {
 	// record the redundant operations 
 	public static int redOperations = 1;
 	Stack copy() {
-		//redOperations = 1;
+		redOperations = 1;
 		int numCopy = 0;
 		numCopy ++;
 		redOperations += slots.length *numCopy;
