@@ -4,6 +4,8 @@ VarexJ is a variability-aware interpreter for Java(7) bytecode based on Java Pat
 
 JDK 7 is required.
 
+You will also need the `jpf-core` JPF module.
+
 
 # Build:
 
@@ -11,6 +13,9 @@ Import the project into eclipse.
 
 If it does not build automatically, right-click on the build.xml \ run as \ Ant BUild
 The build process has to be run with JDK 7, JRE will not work.
+
+Locate the `site.properties` file in the VarexJ project directory.
+Make sure that the value for the `jpf-core` key points to the correct location for the JPF module on your system.
 
 
 # JPF options:
