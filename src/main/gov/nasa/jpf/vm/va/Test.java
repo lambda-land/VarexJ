@@ -34,9 +34,16 @@ public class Test {
 		Conditional<Integer> C = new One<>(3);
 		Conditional<Integer> D = new One<>(4);
 		
+		
 		ta = FeatureExprFactory.createDefinedExternal("A");
 		tb = FeatureExprFactory.createDefinedExternal("B");
 		tc = FeatureExprFactory.createDefinedExternal("C");
+		
+		/*
+		 *  E : Choice("A", 3, 2)
+		 *  G : Choice("C", 1, 4)
+		 *  F : CHoice("B", G, 10)
+		 */
 		Conditional<Integer> E = ChoiceFactory.create(ta, C, B);
 		Conditional<Integer> G = ChoiceFactory.create(tc, A, D);
 		Conditional<Integer> F = ChoiceFactory.create(tb, G, new One<>(10));
@@ -51,24 +58,27 @@ public class Test {
 		//stack.push(FeatureExprFactory.True(), G, false);
         //stack.dup2_x2(ctx);
 		stack.push(ta, B, false);
-		
-		IStackHandler stack2 = StackHandlerFactory.createStack(FeatureExprFactory.True(), 0, 10);
-		stack2.push(FeatureExprFactory.True(), A, true);
-		stack2.push(FeatureExprFactory.True(), B, false);
-		stack2.push(FeatureExprFactory.True(), C, true);
-		stack2.push(FeatureExprFactory.True(), D, false);
+		stack.pop(ta);
+		stack.dup(ta.not());
+		stack.dup(ta.not());
+//		IStackHandler stack2 = StackHandlerFactory.createStack(FeatureExprFactory.True(), 0, 10);
+//		stack2.push(FeatureExprFactory.True(), A, true);
+//		stack2.push(FeatureExprFactory.True(), B, false);
+//		stack2.push(FeatureExprFactory.True(), C, true);
+//		stack2.push(FeatureExprFactory.True(), D, false);
 		//stack.push(FeatureExprFactory.True(), E, false);
 		//stack2.push(FeatureExprFactory.True(), F, false);
 		
 		
 		
-        System.out.println(stack.getTop());
-		System.out.println(stack.numOP().toString());
+        //System.out.println(stack.getTop());
+		//System.out.println(stack.numOP().toString());
 		System.out.println(StackHandler.q.toString());
+		//System.out.println(stack);
 	
 		
-		System.out.println(stack2.getTop());
-		System.out.println(stack2.numOP().toString());
+		//System.out.println(stack2.getTop());
+		//System.out.println(stack2.numOP().toString());
 		
     
     }

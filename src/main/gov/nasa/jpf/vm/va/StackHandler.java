@@ -44,12 +44,11 @@ public class StackHandler implements Cloneable, IStackHandler {
 
 	public FeatureExpr stackCTX;
 	
-	public Conditional<Entry> numsOP;
 	
 	//*** dataCollect class object***//
-	public dataCollect c;
+	public DataCollect c = new DataCollect(this);
 	
-	static LinkedList<StackHandler> q = new LinkedList<StackHandler>();
+	static LinkedList<DataCollect> q = new LinkedList<DataCollect>();
 	
 	
 	/* (non-Javadoc)
@@ -81,26 +80,25 @@ public class StackHandler implements Cloneable, IStackHandler {
 		return string.toString();
 	}
 	
-	/* static vector to */ 
-	
 	private static final One<Entry> nullValue = new One<>(new Entry(MJIEnv.NULL, false)); 
 
 	@SuppressWarnings("unchecked")
 	public StackHandler(FeatureExpr ctx, int nLocals, int nOperands) {
+		c.setMin(nOperands);
 		if (ctx == null) {
 			throw new RuntimeException("CTX == NULL");
 		}
 		length = nLocals + nOperands;
 		locals = new Conditional[nLocals];
 		Arrays.fill(locals, nullValue);
-		stack = new One<>(new Stack(nOperands));
+		stack = new One<>(new Stack(nOperands, this.c));
 		stackCTX = ctx;
-		q.addLast(this);
+		q.addLast(this.c);
 	}
 
 	@SuppressWarnings("unchecked")
 	public StackHandler() {
-		stack = new One<>(new Stack(0));
+		stack = new One<>(new Stack(0, this.c));
 		locals = new Conditional[0];
 		stackCTX = FeatureExprFactory.True();
 	}
@@ -441,6 +439,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 				return ChoiceFactory.create(ctx, new One<>(clone), new One<>(stack));
 			}
 		}).simplify();
+		c.push();
 	}
 
 	/* (non-Javadoc)
@@ -515,6 +514,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 			}
 		}).simplifyValues();
 		stack = stack.simplify();
+		c.pop();
 		return result;
 	}
 
@@ -542,6 +542,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 				return ChoiceFactory.create(f, new One<>(clone), new One<>(s));
 			}
 		}).simplify();
+		c.pop();
 	}
 
 	/* (non-Javadoc)
@@ -653,36 +654,14 @@ public class StackHandler implements Cloneable, IStackHandler {
 	public Conditional<Integer> getTop() {
 		return stack.map(GetTop);
 	}
-	
-	public static Vector<Integer> res = new Vector<Integer>();
-	public static int numbers = 0;
+
 	private static final Function<Stack, Integer> GetTop = new Function<Stack, Integer>() {
 		@Override
 		public Integer apply(final Stack y) {
-			res.addElement(y.top);
 			return y.top;
 		}
 	};
 	
-	//calculate the min, max, ave of Vstack elements
-	public dataCollect numOP(){
-		res = new Vector<Integer>();
-		this.getTop();
-		Integer size = res.size();
-		Integer max = 0, min = res.get(0);
-		Integer ave = 0;
-		for(int i = 0 ; i <size; i++){
-			if(res.get(i) > max){
-				max = res.get(i);
-			}
-			if(res.get(i) < min){
-				min = res.get(i);
-			}
-			ave += res.get(i)+1;
-		}
-		this.c = new dataCollect(size, min+1, max+1, ave/size);
-		return c;
-	}
 
 	/* (non-Javadoc)
 	 * @see gov.nasa.jpf.vm.IStackHandler#setTop(de.fosd.typechef.featureexpr.FeatureExpr, int)
@@ -931,6 +910,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 				return ChoiceFactory.create(ctx, new One<>(clone), new One<>(stack));
 			}
 		}).simplify();
+		c.dup();
 	}
 
 	@Override

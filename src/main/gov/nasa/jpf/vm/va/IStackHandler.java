@@ -98,8 +98,6 @@ public interface IStackHandler {
 	public abstract void set(FeatureExpr ctx, int offset, int value, boolean isRef);
 
 	public abstract Conditional<Integer> getTop();
-	
-	public abstract dataCollect numOP();
 
 	public abstract void setTop(FeatureExpr ctx, int i);
 

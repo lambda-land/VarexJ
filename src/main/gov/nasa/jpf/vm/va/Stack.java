@@ -16,11 +16,13 @@ public class Stack {
 
 	public int top;
 	public Entry[] slots;
+	public DataCollect owner;
 	 
 	
-	public Stack(int nOperands) {
+	public Stack(int nOperands, DataCollect dc) {
 		top = -1;
 		slots = new Entry[nOperands];
+		owner = dc;
 	}
 
 	public void clear() {
@@ -111,14 +113,11 @@ public class Stack {
 		slots[index] = new Entry(value, isRef);
 	}
 
-	// record the redundant operations 
-	public static int redOperations = 1;
+	
 	Stack copy() {
-		redOperations = 1;
-		int numCopy = 0;
-		numCopy ++;
-		redOperations += slots.length *numCopy;
-		Stack clone = new Stack(slots.length);
+		owner.numCopy += top+1;
+		//System.out.println(owner.c.redNum);
+		Stack clone = new Stack(slots.length, owner);
 		clone.top = top;
 		System.arraycopy(slots, 0, clone.slots, 0, top + 1);
 		return clone;
