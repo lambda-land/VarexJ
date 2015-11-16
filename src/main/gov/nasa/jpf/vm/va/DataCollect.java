@@ -24,10 +24,6 @@ public class DataCollect {
 		this.ave = ave;
 	}
 	
-
-	public void setMin(Integer min){
-		this.min = min;
-	}
 	
 	public void push(){
 		calculate();
@@ -56,20 +52,18 @@ public class DataCollect {
 		Integer sum = temp.get(0) + 1;
 		max = temp.get(0) + 1;
 		min = temp.get(0) + 1;
-		if(max > gmax){
-			gmax = max;
-		}
 		for(int i = 1; i < len; i++){
-			if(temp.get(i) + 1 > gmax){
-				this.gmax = temp.get(i) + 1;
-			}
 			if(temp.get(i) + 1 > max)
 				this.max = temp.get(i) + 1;
 			if(temp.get(i) + 1 < min){
 				this.min = temp.get(i) + 1;
 			}
+			
 			sum +=  temp.get(i) + 1;
 		}
+		if(this.max > this.gmax){
+			this.gmax = this.max;
+			}
 		this.ave = sum/len;
 		this.size = len;
 	}

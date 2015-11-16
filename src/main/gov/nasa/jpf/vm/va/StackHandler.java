@@ -84,7 +84,6 @@ public class StackHandler implements Cloneable, IStackHandler {
 
 	@SuppressWarnings("unchecked")
 	public StackHandler(FeatureExpr ctx, int nLocals, int nOperands) {
-		c.setMin(nOperands);
 		if (ctx == null) {
 			throw new RuntimeException("CTX == NULL");
 		}
