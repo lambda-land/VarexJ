@@ -1,10 +1,10 @@
 package gov.nasa.jpf.vm.va;
 
+import gov.nasa.jpf.vm.MJIEnv;
+
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
-
-import gov.nasa.jpf.vm.MJIEnv;
 
 
 /**
@@ -16,10 +16,13 @@ public class Stack {
 
 	public int top;
 	public Entry[] slots;
-
-	public Stack(int nOperands) {
+	public DataCollect owner;
+	 
+	
+	public Stack(int nOperands, DataCollect dc) {
 		top = -1;
 		slots = new Entry[nOperands];
+		owner = dc;
 	}
 
 	public void clear() {
@@ -110,8 +113,11 @@ public class Stack {
 		slots[index] = new Entry(value, isRef);
 	}
 
+	
 	Stack copy() {
-		Stack clone = new Stack(slots.length);
+		owner.numCopy += top+1;
+		//System.out.println(owner.c.redNum);
+		Stack clone = new Stack(slots.length, owner);
 		clone.top = top;
 		System.arraycopy(slots, 0, clone.slots, 0, top + 1);
 		return clone;

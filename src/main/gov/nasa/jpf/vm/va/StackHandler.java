@@ -1,8 +1,12 @@
 package gov.nasa.jpf.vm.va;
 
+import gov.nasa.jpf.vm.MJIEnv;
+import gov.nasa.jpf.vm.Types;
+
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.*;
 
 import cmu.conditional.BiFunction;
 import cmu.conditional.ChoiceFactory;
@@ -12,8 +16,6 @@ import cmu.conditional.One;
 import cmu.conditional.VoidBiFunction;
 import de.fosd.typechef.featureexpr.FeatureExpr;
 import de.fosd.typechef.featureexpr.FeatureExprFactory;
-import gov.nasa.jpf.vm.MJIEnv;
-import gov.nasa.jpf.vm.Types;
 
 /**
  * Stack implementation where locals are separated from stack.<br>
@@ -41,6 +43,13 @@ public class StackHandler implements Cloneable, IStackHandler {
 	public int length = 0;
 
 	public FeatureExpr stackCTX;
+	
+	
+	//*** dataCollect class object***//
+	public DataCollect c = new DataCollect(this);
+	
+	static LinkedList<DataCollect> q = new LinkedList<DataCollect>();
+	
 	
 	/* (non-Javadoc)
 	 * @see gov.nasa.jpf.vm.IStackHandler#getStackWidth()
@@ -75,19 +84,21 @@ public class StackHandler implements Cloneable, IStackHandler {
 
 	@SuppressWarnings("unchecked")
 	public StackHandler(FeatureExpr ctx, int nLocals, int nOperands) {
+		c.setMin(nOperands);
 		if (ctx == null) {
 			throw new RuntimeException("CTX == NULL");
 		}
 		length = nLocals + nOperands;
 		locals = new Conditional[nLocals];
 		Arrays.fill(locals, nullValue);
-		stack = new One<>(new Stack(nOperands));
+		stack = new One<>(new Stack(nOperands, this.c));
 		stackCTX = ctx;
+		q.addLast(this.c);
 	}
 
 	@SuppressWarnings("unchecked")
 	public StackHandler() {
-		stack = new One<>(new Stack(0));
+		stack = new One<>(new Stack(0, this.c));
 		locals = new Conditional[0];
 		stackCTX = FeatureExprFactory.True();
 	}
@@ -428,6 +439,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 				return ChoiceFactory.create(ctx, new One<>(clone), new One<>(stack));
 			}
 		}).simplify();
+		c.push();
 	}
 
 	/* (non-Javadoc)
@@ -502,6 +514,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 			}
 		}).simplifyValues();
 		stack = stack.simplify();
+		c.pop();
 		return result;
 	}
 
@@ -529,6 +542,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 				return ChoiceFactory.create(f, new One<>(clone), new One<>(s));
 			}
 		}).simplify();
+		c.pop();
 	}
 
 	/* (non-Javadoc)
@@ -640,13 +654,14 @@ public class StackHandler implements Cloneable, IStackHandler {
 	public Conditional<Integer> getTop() {
 		return stack.map(GetTop);
 	}
-	
+
 	private static final Function<Stack, Integer> GetTop = new Function<Stack, Integer>() {
 		@Override
 		public Integer apply(final Stack y) {
 			return y.top;
 		}
 	};
+	
 
 	/* (non-Javadoc)
 	 * @see gov.nasa.jpf.vm.IStackHandler#setTop(de.fosd.typechef.featureexpr.FeatureExpr, int)
@@ -895,6 +910,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 				return ChoiceFactory.create(ctx, new One<>(clone), new One<>(stack));
 			}
 		}).simplify();
+		c.dup();
 	}
 
 	@Override
