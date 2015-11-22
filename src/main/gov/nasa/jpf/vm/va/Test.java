@@ -5,6 +5,7 @@ package gov.nasa.jpf.vm.va;
 import gov.nasa.jpf.vm.MJIEnv;
 import gov.nasa.jpf.vm.Types;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -18,12 +19,15 @@ import cmu.conditional.MapChoice;
 import cmu.conditional.VoidBiFunction;
 import de.fosd.typechef.featureexpr.FeatureExpr;
 import de.fosd.typechef.featureexpr.FeatureExprFactory;
-
+import java.util.logging.*;
+import java.util.logging.Logger;
+import java.util.logging.FileHandler;
+import java.util.logging.Handler;
 
 public class Test {
-
-    public static void main(String[] args) {
-    	
+   
+    public static void main(String[] args) throws IOException {
+    
     	
         FeatureExpr ta, tb, tc;
     	
@@ -58,6 +62,7 @@ public class Test {
 		stack.dup(ta.not());
 		stack.dup(ta.not());
 		stack.pop(ta.not());
+		stack.pop(ta, 2);
 		
 	//	System.out.println(StackHandler.q.toString());
 		stack.push(tb, D);

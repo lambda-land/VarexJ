@@ -16,13 +16,13 @@ public class Stack {
 
 	public int top;
 	public Entry[] slots;
-	public DataCollect owner;
+	public DataCollect c;
 	 
 	
 	public Stack(int nOperands, DataCollect dc) {
 		top = -1;
 		slots = new Entry[nOperands];
-		owner = dc;
+		c = dc;
 	}
 
 	public void clear() {
@@ -115,9 +115,9 @@ public class Stack {
 
 	
 	Stack copy() {
-		owner.numCopy += top+1;
+		c.stackcopy(this);
 		//System.out.println(owner.c.redNum);
-		Stack clone = new Stack(slots.length, owner);
+		Stack clone = new Stack(slots.length, c);
 		clone.top = top;
 		System.arraycopy(slots, 0, clone.slots, 0, top + 1);
 		return clone;

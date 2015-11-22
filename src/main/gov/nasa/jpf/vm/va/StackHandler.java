@@ -46,7 +46,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 	
 	
 	//*** dataCollect class object***//
-	public DataCollect c = new DataCollect(this);
+	public DataCollect c = new DataCollect();
 	
 	static LinkedList<DataCollect> q = new LinkedList<DataCollect>();
 	
@@ -438,7 +438,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 				return ChoiceFactory.create(ctx, new One<>(clone), new One<>(stack));
 			}
 		}).simplify();
-		c.push();
+		c.push(this, ctx, value, isRef);
 	}
 
 	/* (non-Javadoc)
@@ -513,7 +513,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 			}
 		}).simplifyValues();
 		stack = stack.simplify();
-		c.pop();
+		c.pop(this, ctx, 0);
 		return result;
 	}
 
@@ -541,7 +541,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 				return ChoiceFactory.create(f, new One<>(clone), new One<>(s));
 			}
 		}).simplify();
-		c.pop();
+		c.pop(this, ctx, n);
 	}
 
 	/* (non-Javadoc)
@@ -846,6 +846,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 	@Override
 	public void dup(final FeatureExpr ctx) {
 		function(ctx, StackInstruction.DUP);
+		c.dup(this, ctx);
 	}
 
 	/* (non-Javadoc)
@@ -909,7 +910,6 @@ public class StackHandler implements Cloneable, IStackHandler {
 				return ChoiceFactory.create(ctx, new One<>(clone), new One<>(stack));
 			}
 		}).simplify();
-		c.dup();
 	}
 
 	@Override
