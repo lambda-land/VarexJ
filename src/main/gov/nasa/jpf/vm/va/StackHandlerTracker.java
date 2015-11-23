@@ -3,18 +3,23 @@ package gov.nasa.jpf.vm.va;
 import java.util.*;
 import de.fosd.typechef.featureexpr.FeatureExpr;
 
-public class DataCollect {
-	public Integer numCopy = 0;
-	Integer size = 0;
-	Integer max = 0;
-	Integer min = 0;
-	Integer ave = 0; 
-	Integer gmax = 0;
+public class StackHandlerTracker {
+	Integer numCopy;
+	Integer size;
+	Integer max;
+	Integer min;
+	Integer ave; 
+	Integer gmax;
 
 	
-	public DataCollect(){
-		
-	}
+	StackHandlerTracker() {
+    	this.numCopy = 0;
+    	this.size = 0;
+    	this.max = 0;
+    	this.min = 0;
+    	this.ave = 0; 
+    	this.gmax = 0;
+    }
 	
 	public void set(Integer size, Integer min, Integer max, Integer ave) {
 		this.size = size;
@@ -86,7 +91,6 @@ public class DataCollect {
 	
 	public void IINC(StackHandler sh, FeatureExpr ctx, int index, final int increment){}
 
-	
 	/***
 	 *  Stack
 	 *  stackcopy entrycopy 
@@ -96,7 +100,7 @@ public class DataCollect {
 	public void stackcopy(Stack s) {
 		this.numCopy += s.top+1;
 	}
-	
+
 	public void clear(Stack s){}
 	
 	public void setRef(Stack s, int index, boolean ref){}
@@ -132,7 +136,7 @@ public class DataCollect {
 	public void getReferences(Stack s){}
 	
 	public void  entrycopy(Stack s){}
-	
+
 	public void calculate(StackHandler sh){
 		List<Integer> temp = sh.getTop().toList();
 		Integer len = temp.size();

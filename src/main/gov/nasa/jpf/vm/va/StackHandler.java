@@ -45,10 +45,10 @@ public class StackHandler implements Cloneable, IStackHandler {
 	public FeatureExpr stackCTX;
 	
 	
-	//*** dataCollect class object***//
-	public DataCollect c = new DataCollect();
+	//*** StackHandlerTracker class object***//
+	public StackHandlerTracker c = new StackHandlerTracker();
 	
-	static LinkedList<DataCollect> q = new LinkedList<DataCollect>();
+	//static LinkedList<StackHandlerTracker> q = new LinkedList<StackHandlerTracker>();
 	
 	
 	/* (non-Javadoc)
@@ -92,7 +92,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 		Arrays.fill(locals, nullValue);
 		stack = new One<>(new Stack(nOperands, this.c));
 		stackCTX = ctx;
-		q.addLast(this.c);
+		//q.addLast(this.c);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -513,7 +513,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 			}
 		}).simplifyValues();
 		stack = stack.simplify();
-		c.pop(this, ctx, 0);
+		c.pop(this, ctx,0);
 		return result;
 	}
 

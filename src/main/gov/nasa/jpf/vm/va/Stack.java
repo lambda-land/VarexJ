@@ -16,10 +16,10 @@ public class Stack {
 
 	public int top;
 	public Entry[] slots;
-	public DataCollect c;
+	public StackHandlerTracker c;
 	 
 	
-	public Stack(int nOperands, DataCollect dc) {
+	public Stack(int nOperands, StackHandlerTracker dc) {
 		top = -1;
 		slots = new Entry[nOperands];
 		c = dc;
