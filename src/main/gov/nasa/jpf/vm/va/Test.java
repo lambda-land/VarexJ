@@ -2,27 +2,13 @@
 
 package gov.nasa.jpf.vm.va;
 
-import gov.nasa.jpf.vm.MJIEnv;
-import gov.nasa.jpf.vm.Types;
-
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 
-import cmu.conditional.BiFunction;
 import cmu.conditional.ChoiceFactory;
 import cmu.conditional.Conditional;
-import cmu.conditional.Function;
 import cmu.conditional.One;
-import cmu.conditional.MapChoice;
-import cmu.conditional.VoidBiFunction;
 import de.fosd.typechef.featureexpr.FeatureExpr;
 import de.fosd.typechef.featureexpr.FeatureExprFactory;
-import java.util.logging.*;
-import java.util.logging.Logger;
-import java.util.logging.FileHandler;
-import java.util.logging.Handler;
 
 public class Test {
    

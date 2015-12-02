@@ -44,7 +44,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 
 	public FeatureExpr stackCTX;
 	
-	
+	static public int cnt = 0;
 	//*** StackHandlerTracker class object***//
 	public StackHandlerTracker c = new StackHandlerTracker();
 	
@@ -92,6 +92,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 		Arrays.fill(locals, nullValue);
 		stack = new One<>(new Stack(nOperands, this.c));
 		stackCTX = ctx;
+		this.cnt++;
 		//q.addLast(this.c);
 	}
 
@@ -100,6 +101,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 		stack = new One<>(new Stack(0, this.c));
 		locals = new Conditional[0];
 		stackCTX = FeatureExprFactory.True();
+		this.cnt++;
 	}
 	
 	@Override
