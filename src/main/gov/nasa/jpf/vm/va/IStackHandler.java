@@ -99,7 +99,7 @@ public interface IStackHandler {
 
 	public abstract Conditional<Integer> getTop();
 	
-	public abstract dataCollect numOP();
+	public abstract Vector<Integer> numOP();
 
 	public abstract void setTop(FeatureExpr ctx, int i);
 

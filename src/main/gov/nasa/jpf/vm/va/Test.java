@@ -47,7 +47,7 @@ public class Test {
 		stack.push(FeatureExprFactory.True(), C, true);
 		stack.push(FeatureExprFactory.True(), D, false);
 		stack.push(FeatureExprFactory.True(), E, false);
-		//stack.push(FeatureExprFactory.True(), F, false);
+		stack.push(FeatureExprFactory.True(), F, false);
 		//stack.push(FeatureExprFactory.True(), G, false);
         //stack.dup2_x2(ctx);
 		stack.push(ta, B, false);
@@ -64,8 +64,7 @@ public class Test {
 		
         System.out.println(stack.getTop());
 		System.out.println(stack.numOP().toString());
-		System.out.println(StackHandler.q.toString());
-	
+		System.out.println(Stack.redOperations);
 		
 		System.out.println(stack2.getTop());
 		System.out.println(stack2.numOP().toString());
