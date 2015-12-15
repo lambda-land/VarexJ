@@ -45,10 +45,10 @@ public class StackHandler implements Cloneable, IStackHandler {
 	public FeatureExpr stackCTX;
 	
 	
-	//*** StackHandlerTracker class object***//
-	public StackHandlerTracker c = new StackHandlerTracker();
+	//*** dataCollect class object***//
+	public DataCollect c = new DataCollect(this);
 	
-	//static LinkedList<StackHandlerTracker> q = new LinkedList<StackHandlerTracker>();
+	static LinkedList<DataCollect> q = new LinkedList<DataCollect>();
 	
 	
 	/* (non-Javadoc)
@@ -84,6 +84,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 
 	@SuppressWarnings("unchecked")
 	public StackHandler(FeatureExpr ctx, int nLocals, int nOperands) {
+		c.setMin(nOperands);
 		if (ctx == null) {
 			throw new RuntimeException("CTX == NULL");
 		}
@@ -92,7 +93,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 		Arrays.fill(locals, nullValue);
 		stack = new One<>(new Stack(nOperands, this.c));
 		stackCTX = ctx;
-		//q.addLast(this.c);
+		q.addLast(this.c);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -438,7 +439,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 				return ChoiceFactory.create(ctx, new One<>(clone), new One<>(stack));
 			}
 		}).simplify();
-		c.push(this, ctx, value, isRef);
+		c.push();
 	}
 
 	/* (non-Javadoc)
@@ -513,7 +514,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 			}
 		}).simplifyValues();
 		stack = stack.simplify();
-		c.pop(this, ctx,0);
+		c.pop();
 		return result;
 	}
 
@@ -541,7 +542,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 				return ChoiceFactory.create(f, new One<>(clone), new One<>(s));
 			}
 		}).simplify();
-		c.pop(this, ctx, n);
+		c.pop();
 	}
 
 	/* (non-Javadoc)
@@ -846,7 +847,6 @@ public class StackHandler implements Cloneable, IStackHandler {
 	@Override
 	public void dup(final FeatureExpr ctx) {
 		function(ctx, StackInstruction.DUP);
-		c.dup(this, ctx);
 	}
 
 	/* (non-Javadoc)
@@ -910,6 +910,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 				return ChoiceFactory.create(ctx, new One<>(clone), new One<>(stack));
 			}
 		}).simplify();
+		c.dup();
 	}
 
 	@Override
