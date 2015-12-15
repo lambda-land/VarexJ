@@ -1,10 +1,10 @@
 package gov.nasa.jpf.vm.va;
 
-import gov.nasa.jpf.vm.MJIEnv;
-
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+
+import gov.nasa.jpf.vm.MJIEnv;
 
 
 /**
@@ -16,8 +16,7 @@ public class Stack {
 
 	public int top;
 	public Entry[] slots;
-	 
-	
+
 	public Stack(int nOperands) {
 		top = -1;
 		slots = new Entry[nOperands];
@@ -111,13 +110,7 @@ public class Stack {
 		slots[index] = new Entry(value, isRef);
 	}
 
-	// record the redundant operations 
-	public static int redOperations = 1;
 	Stack copy() {
-		//redOperations = 1;
-		int numCopy = 0;
-		numCopy ++;
-		redOperations += slots.length *numCopy;
 		Stack clone = new Stack(slots.length);
 		clone.top = top;
 		System.arraycopy(slots, 0, clone.slots, 0, top + 1);
