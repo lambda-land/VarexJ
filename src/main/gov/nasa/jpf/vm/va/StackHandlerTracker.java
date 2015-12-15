@@ -35,19 +35,22 @@ public class StackHandlerTracker {
 	 */
 	public void push(StackHandler sh, final FeatureExpr ctx, final Object value, final boolean isRef){
 		calculate(sh);
-		Log.getInstance().info("ID "+ StackHandler.cnt + " PUSH "+ ctx + " " + value +'\n');
+		Log.getInstance().info("id" + StackHandler.cnt + " = push(id" + StackHandler.cnt + "," + ctx.toString() + "," + value + ")\n");
+		//Log.getInstance().info("ID "+ StackHandler.cnt + " push "+ ctx + " " + value +'\n');
 	}
 	
 	public void pop(StackHandler sh, FeatureExpr ctx, final int n){
 		calculate(sh);
-		Log.getInstance().info("ID "+ StackHandler.cnt + " POP "+ ctx +'\n');
+		Log.getInstance().info("id" + StackHandler.cnt + " = pop(id" + StackHandler.cnt + "," + ctx + ")\n");
+		//Log.getInstance().info("ID "+ StackHandler.cnt + " pop "+ ctx +'\n');
 	} 
 	
 	public void set(StackHandler sh, final FeatureExpr ctx, final int offset, final int value, final boolean isRef){}
 	
 	public void dup(StackHandler sh, final FeatureExpr ctx) {
 		calculate(sh);
-		Log.getInstance().info("ID "+ StackHandler.cnt +" DUP "+ ctx +'\n');
+		Log.getInstance().info("id" + StackHandler.cnt + " = dup(id" + StackHandler.cnt + "," + ctx + ")\n");
+		//Log.getInstance().info("ID "+ StackHandler.cnt +" dup "+ ctx +'\n');
 	}
 			
 	public void isRef(StackHandler sh, final FeatureExpr ctx, final int offset) {}
