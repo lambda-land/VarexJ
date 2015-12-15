@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.logging.*;;
+import java.util.logging.SimpleFormatter;;
 public class Log {
 	static Logger logger = null;
 	public static void init() {
@@ -16,12 +16,11 @@ public class Log {
     	} catch(IOException e) {
     	}
     	fileHandler.setLevel(Level.INFO);
-    	//SimpleFormatter formatter = new SimpleFormatter(); 
-    	//fileHandler.setFormatter(formatter);
-    	fileHandler.setFormatter(new MyCustomFormatter());;
+    	SimpleFormatter formatter = new SimpleFormatter();
+    	fileHandler.setFormatter(formatter);
     	logger.addHandler(fileHandler); 
     	logger.setUseParentHandlers(false);  
-    	//logger.info("Begin Crawling, Good Luck!");
+    	logger.info("Begin Crawling, Good Luck!");
 	}
 	public static Logger getInstance() {
 		if(logger == null) {
@@ -30,13 +29,4 @@ public class Log {
 		}
 		return logger;
 	}
-	
-	private static class MyCustomFormatter extends Formatter {
-		public String format(LogRecord record) {
-			StringBuffer sb = new StringBuffer();
-			sb.append(record.getMessage()); 
-			
-			return sb.toString();
-		}
-	} 
 }

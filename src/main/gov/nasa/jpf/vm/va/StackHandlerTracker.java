@@ -35,19 +35,19 @@ public class StackHandlerTracker {
 	 */
 	public void push(StackHandler sh, final FeatureExpr ctx, final Object value, final boolean isRef){
 		calculate(sh);
-		Log.getInstance().info("ID "+ StackHandler.cnt + " PUSH "+ ctx + " " + value +'\n');
+		Log.getInstance().info("PUSH\n"+ sh.toString() + "\n" + this.toString());
 	}
 	
 	public void pop(StackHandler sh, FeatureExpr ctx, final int n){
 		calculate(sh);
-		Log.getInstance().info("ID "+ StackHandler.cnt + " POP "+ ctx +'\n');
+		Log.getInstance().info("POP\n"+ sh.toString() + "\n" + this.toString());
 	} 
 	
 	public void set(StackHandler sh, final FeatureExpr ctx, final int offset, final int value, final boolean isRef){}
 	
 	public void dup(StackHandler sh, final FeatureExpr ctx) {
 		calculate(sh);
-		Log.getInstance().info("ID "+ StackHandler.cnt +" DUP "+ ctx +'\n');
+		Log.getInstance().info("DUP\n"+ sh.toString() + "\n" + this.toString());
 	}
 			
 	public void isRef(StackHandler sh, final FeatureExpr ctx, final int offset) {}
