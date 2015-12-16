@@ -42,6 +42,10 @@ public class StackHandler implements Cloneable, IStackHandler {
 
 	public FeatureExpr stackCTX;
 	
+	static public int cnt = 0;
+	
+	public StackHandlerTracker c = new StackHandlerTracker();
+	
 	/* (non-Javadoc)
 	 * @see gov.nasa.jpf.vm.IStackHandler#getStackWidth()
 	 */
@@ -84,15 +88,17 @@ public class StackHandler implements Cloneable, IStackHandler {
 		length = nLocals + nOperands;
 		locals = new Conditional[nLocals];
 		Arrays.fill(locals, nullValue);
-		stack = new One<>(new Stack(nOperands));
+		stack = new One<>(new Stack(nOperands, c));
 		stackCTX = ctx;
+		this.cnt++;
 	}
 
 	@SuppressWarnings("unchecked")
 	public StackHandler() {
-		stack = new One<>(new Stack(0));
+		stack = new One<>(new Stack(0, c));
 		locals = new Conditional[0];
 		stackCTX = FeatureExprFactory.True();
+		this.cnt++;
 	}
 	
 	@Override
@@ -431,6 +437,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 				return ChoiceFactory.create(ctx, new One<>(clone), new One<>(stack));
 			}
 		}).simplify();
+		c.push(this, ctx, value, isRef);
 	}
 
 	/* (non-Javadoc)
@@ -505,6 +512,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 			}
 		}).simplifyValues();
 		stack = stack.simplify();
+		c.pop(this, ctx,0);
 		return result;
 	}
 
@@ -835,6 +843,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 	@Override
 	public void dup(final FeatureExpr ctx) {
 		function(ctx, StackInstruction.DUP);
+		c.dup(this, ctx);
 	}
 
 	/* (non-Javadoc)

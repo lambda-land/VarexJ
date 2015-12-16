@@ -181,3 +181,9 @@ pmd {
     sourceSets = [sourceSets.main]
     reportsDir = file("$project.buildDir/reports/pmd")
 }
+
+
+apply plugin: 'java'
+apply plugin: 'application'
+
+mainClassName = 'gov.nasa.jpf.vm.va.Test'

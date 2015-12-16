@@ -28,7 +28,8 @@ public class BufferedStackHandler extends StackHandler implements Cloneable, ISt
 	private LinkedList<Tuple> buffer = new LinkedList<>();
 	private FeatureExpr bufferCTX = FeatureExprFactory.True();
 	private int maxStackSize;
-
+	public StackHandlerTracker c = new StackHandlerTracker();
+	
 	@Override
 	public String toString() {
 		StringBuilder string = new StringBuilder();
@@ -65,7 +66,7 @@ public class BufferedStackHandler extends StackHandler implements Cloneable, ISt
 		maxStackSize = nOperands;
 		locals = new Conditional[nLocals];
 		Arrays.fill(locals, nullValue);
-		stack = new One<>(new Stack(nOperands));
+		stack = new One<>(new Stack(nOperands, c));
 		stackCTX = ctx;
 	}
 

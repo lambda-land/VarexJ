@@ -16,10 +16,12 @@ public class Stack {
 
 	public int top;
 	public Entry[] slots;
+	public StackHandlerTracker c;
 
-	public Stack(int nOperands) {
+	public Stack(int nOperands, StackHandlerTracker dc) {
 		top = -1;
 		slots = new Entry[nOperands];
+		c = dc;
 	}
 
 	public void clear() {
@@ -111,7 +113,8 @@ public class Stack {
 	}
 
 	Stack copy() {
-		Stack clone = new Stack(slots.length);
+		c.stackcopy(this);
+		Stack clone = new Stack(slots.length, c);
 		clone.top = top;
 		System.arraycopy(slots, 0, clone.slots, 0, top + 1);
 		return clone;
