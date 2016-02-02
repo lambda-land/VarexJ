@@ -1,0 +1,2 @@
++classpath=${config_path}/bin
+target= gov.nasa.jpf.vm.va.Test
