@@ -35,7 +35,7 @@ public class JPF_OList {
 		return head;
 	}
 	 
-    public void add(int argRef, FeatureExpr ctx){
+    public Node add(int argRef, FeatureExpr ctx){
     	if (head == null) {
     		head = new Node(ChoiceFactory.create(ctx, new One<>(argRef), null));
     	}else{
@@ -43,6 +43,7 @@ public class JPF_OList {
     		while(tmp.next != null) tmp = tmp.next;
     		tmp.next = new Node(ChoiceFactory.create(ctx, new One<>(argRef), null));
     	}	
+    	return head;
     }
     
     public Conditional<Integer> get(int index){
@@ -52,7 +53,9 @@ public class JPF_OList {
     	}
     	return tmp.data;
     }
+    
 
+    /*
     public static void main(String[] args) {
     	FeatureExpr ta = FeatureExprFactory.createDefinedExternal("A");
     	JPF_OList list = new JPF_OList();
@@ -61,7 +64,7 @@ public class JPF_OList {
     	for(int i = 0; i < 2; i++){
     		System.out.println(list.get(i));
     	}
-    }
+    }*/
 
 }
 
@@ -71,64 +74,33 @@ public class JPF_OList {
 	
 	// TODO replace Conditional<LinkedList<Integer>> by a varaibility-aware data structure
    
-/*
-class MyLinkedList {
+
+class MyLinkedList extends NativePeer  {
     final Map<Integer, JPF_OList> myLists = new HashMap<>();
 
 	@MJI
 	public void $init____V(MJIEnv env, int objref, FeatureExpr ctx) {
 		myLists.put(objref, new JPF_OList());
 	}
+  
 
 	@MJI
 	public Conditional<Integer> size____I(MJIEnv env, int objref, FeatureExpr ctx) {
-		Conditional<LinkedList<Integer>> list = myLists.get(objref).simplify(ctx);
-		return list.map(new Function<LinkedList<Integer>, Integer>() {
-
-			@Override
-			public Integer apply(LinkedList<Integer> x) {
-				return x.size();
-			}
-
-		}).simplify(ctx);
+		return new One<>(1);	
 	}
 
 	@MJI
 	public boolean add__Ljava_lang_Object_2__Z(MJIEnv env, int objref, final int argRef, FeatureExpr ctx) {
-		Conditional<LinkedList<Integer>> list = myLists.get(objref);
-		list = list.mapf(ctx, new BiFunction<FeatureExpr, LinkedList<Integer>, Conditional<LinkedList<Integer>>>() {
-
-			@Override
-			public Conditional<LinkedList<Integer>> apply(FeatureExpr ctx, LinkedList<Integer> list) {
-				@SuppressWarnings("unchecked")
-				LinkedList<Integer> clone = (LinkedList<Integer>) list.clone();
-				clone.add(argRef);
-				return ChoiceFactory.create(ctx, new One<>(clone), new One<>(list));
-
-			}
-
-		}).simplify();
+		JPF_OList list = myLists.get(objref);
+		list.add(argRef, ctx);
 		myLists.put(objref, list);
 		return true;// always true
 	}
 
 	@MJI
 	public Conditional<Integer> get__I__Ljava_lang_Object_2(final MJIEnv env, int objref, final int index, FeatureExpr ctx) {
-		Conditional<LinkedList<Integer>> list = myLists.get(objref).simplify(ctx);
-		return list.mapf(ctx, new BiFunction<FeatureExpr, LinkedList<Integer>, Conditional<Integer>>() {
-
-			@Override
-			public Conditional<Integer> apply(FeatureExpr ctx, LinkedList<Integer> list) {
-				try {
-					return One.valueOf(list.get(index));
-				} catch (Exception e) {
-					env.ti.createAndThrowException(ctx, e.getClass().getName());
-				}
-				return One.valueOf(-1);
-			}
-
-		});
+		JPF_OList list = myLists.get(objref);
+		return list.get(index);
 	}
 }
 
-*/
