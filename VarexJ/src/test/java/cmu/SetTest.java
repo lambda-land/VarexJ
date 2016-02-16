@@ -1,6 +1,5 @@
 package cmu;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Iterator;
 import org.junit.Test;
@@ -17,7 +16,7 @@ public class SetTest extends TestJPF {
 	public void setTest() throws Exception {
 		if (verifyNoPropertyViolation(JPF_CONFIGURATION)) {
 			try {
-				NonStaticFeature[] options = getOptions(2);
+				NonStaticFeature[] options = getOptions(5);
 				
 				HashSet<Integer> set = new HashSet<Integer>();
 		
@@ -28,26 +27,20 @@ public class SetTest extends TestJPF {
 						set.add(i);
 					}
 				}
-				
-				
-				set.size();
-/*
-			    Iterator itr = set.iterator();
-
-			    while (itr.hasNext()){
-			      System.out.println(itr.next());
-			    }
-				//System.out.println("Size: " + set.size());
-				//System.out.println(set.toString());
-	
+				  
+				System.out.println("Size: " + set.size());
+			    System.out.println(set);
+		
+				System.out.println("*****************************************");
+			
 				int sum = 0;
 				for (Integer element : set) {
 					sum += element; 
 				}
 				if (sum == 10) {
 					System.out.println(set);
-				} 
-					*/
+				}	 
+			
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

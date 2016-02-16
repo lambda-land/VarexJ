@@ -1,5 +1,5 @@
 package java.util;
-
+import java.io.*;
 
 public class HashSet<E>
     extends AbstractSet<E>
@@ -15,65 +15,27 @@ public class HashSet<E>
     }
 
 
-    /**
-     * Constructs a new set containing the elements in the specified
-     * collection.  The <tt>HashMap</tt> is created with default load factor
-     * (0.75) and an initial capacity sufficient to contain the elements in
-     * the specified collection.
-     *
-     * @param c the collection whose elements are to be placed into this set
-     * @throws NullPointerException if the specified collection is null
-     */
+ 
     public HashSet(Collection<? extends E> c) {
         map = new HashMap<>(Math.max((int) (c.size()/.75f) + 1, 16));
         addAll(c);
     }
 
-    /**
-     * Constructs a new, empty set; the backing <tt>HashMap</tt> instance has
-     * the specified initial capacity and the specified load factor.
-     *
-     * @param      initialCapacity   the initial capacity of the hash map
-     * @param      loadFactor        the load factor of the hash map
-     * @throws     IllegalArgumentException if the initial capacity is less
-     *             than zero, or if the load factor is nonpositive
-     */
+  
     public HashSet(int initialCapacity, float loadFactor) {
         map = new HashMap<>(initialCapacity, loadFactor);
     }
 
-    /**
-     * Constructs a new, empty set; the backing <tt>HashMap</tt> instance has
-     * the specified initial capacity and default load factor (0.75).
-     *
-     * @param      initialCapacity   the initial capacity of the hash table
-     * @throws     IllegalArgumentException if the initial capacity is less
-     *             than zero
-     */
+   
     public HashSet(int initialCapacity) {
         map = new HashMap<>(initialCapacity);
     }
 
-    /**
-     * Constructs a new, empty linked hash set.  (This package private
-     * constructor is only used by LinkedHashSet.) The backing
-     * HashMap instance is a LinkedHashMap with the specified initial
-     * capacity and the specified load factor.
-     *
-     * @param      initialCapacity   the initial capacity of the hash map
-     * @param      loadFactor        the load factor of the hash map
-     * @param      dummy             ignored (distinguishes this
-     *             constructor from other int, float constructor.)
-     * @throws     IllegalArgumentException if the initial capacity is less
-     *             than zero, or if the load factor is nonpositive
-     */
+    
     HashSet(int initialCapacity, float loadFactor, boolean dummy) {
         map = new LinkedHashMap<>(initialCapacity, loadFactor);
     }
 
- 
-	
-   
 
     @Override
     public boolean isEmpty() {
@@ -99,25 +61,70 @@ public class HashSet<E>
     public Object clone() {
        throw new RuntimeException();
     }
+   
+    public native E get(int index);
 
-    /**
-     * Save the state of this <tt>HashSet</tt> instance to a stream (that is,
-     * serialize it).
-     *
-     * @serialData The capacity of the backing <tt>HashMap</tt> instance
-     *             (int), and its load factor (float) are emitted, followed by
-     *             the size of the set (the number of elements it contains)
-     *             (int), followed by all of its elements (each an Object) in
-     *             no particular order.
-     */
-    
-    
     @Override
-    public Iterator<E> iterator() {
-        return map.keySet().iterator();
+    public Iterator<E> iterator(){
+    	return new HashItr(0);
     }
+    
     @Override
-    public native int size();
+	public native int size();
+    
+    private class HashItr implements Iterator<E> {
+        private int nextIndex;
+
+        public HashItr(int index) {
+            nextIndex = index;
+        }
+
+        public boolean hasNext() {
+            return nextIndex < size();
+        }
+
+        public E next() {
+            checkForComodification();
+            if (!hasNext())
+                throw new NoSuchElementException();
+            return get(nextIndex++);
+        }
+
+        public boolean hasPrevious() {
+            return nextIndex > 0;
+        }
+
+        public E previous() {
+            checkForComodification();
+            if (!hasPrevious())
+                throw new NoSuchElementException();
+
+            return get(nextIndex--);
+        }
+
+        public int nextIndex() {
+            return nextIndex;
+        }
+
+        public int previousIndex() {
+            return nextIndex - 1;
+        }
+
+        public void remove() {
+            throw new RuntimeException();
+        }
+
+        public void set(E e) {
+        	throw new RuntimeException();
+        }
+
+        public void add(E e) {
+            throw new RuntimeException();
+        }
+
+        final void checkForComodification() {
+        }
+    }
 
 }
 
