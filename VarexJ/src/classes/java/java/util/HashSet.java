@@ -1,105 +1,130 @@
 package java.util;
+import java.io.*;
 
-public class HashSet<E> extends AbstractSet<E> implements Set<E>, Cloneable, java.io.Serializable {
-	static final long serialVersionUID = -5024744406713321676L;
+public class HashSet<E>
+    extends AbstractSet<E>
+    implements Set<E>, Cloneable, java.io.Serializable
+{
+    static final long serialVersionUID = -5024744406713321676L;
 
-	private transient HashMap<E, Object> map;
+    private transient HashMap<E,Object> map;
 
-	private static final Object PRESENT = new Object();
+    private static final Object PRESENT = new Object();
 
-	public HashSet() {
-	}
+    public HashSet() {
+    }
 
-	public HashSet(Collection<? extends E> c) {
-		map = new HashMap<>(Math.max((int) (c.size() / .75f) + 1, 16));
-		addAll(c);
-	}
 
-	public HashSet(int initialCapacity, float loadFactor) {
-		map = new HashMap<>(initialCapacity, loadFactor);
-	}
+ 
+    public HashSet(Collection<? extends E> c) {
+        map = new HashMap<>(Math.max((int) (c.size()/.75f) + 1, 16));
+        addAll(c);
+    }
 
-	public HashSet(int initialCapacity) {
-		map = new HashMap<>(initialCapacity);
-	}
+  
+    public HashSet(int initialCapacity, float loadFactor) {
+        map = new HashMap<>(initialCapacity, loadFactor);
+    }
 
-	HashSet(int initialCapacity, float loadFactor, boolean dummy) {
-		map = new LinkedHashMap<>(initialCapacity, loadFactor);
-	}
+   
+    public HashSet(int initialCapacity) {
+        map = new HashMap<>(initialCapacity);
+    }
 
-	@Override
-	public boolean isEmpty() {
-		return map.isEmpty();
-	}
+    
+    HashSet(int initialCapacity, float loadFactor, boolean dummy) {
+        map = new LinkedHashMap<>(initialCapacity, loadFactor);
+    }
 
-	@Override
-	public native boolean contains(Object o);
 
-	@Override
-	public native boolean add(E e);
-	
-	@Override
-	public boolean remove(Object o) {
-		throw new RuntimeException();
-	}
+    @Override
+    public boolean isEmpty() {
+        return map.isEmpty();
+    }
 
-	@Override
-	public void clear() {
-		throw new RuntimeException();
-	}
+    @Override
+    public native boolean contains(Object o);
+    @Override
+    public native boolean add(E e);
 
-	@Override
-	public Object clone() {
-		throw new RuntimeException();
-	}
+    @Override
+    public boolean remove(Object o) {
+        throw new RuntimeException();
+    }
 
-	public native E get(int index);
+    @Override
+    public void clear() {
+        throw new RuntimeException();
+    }
 
-	@Override
-	public Iterator<E> iterator() {
-		return new HashSetIterator();
-	}
+    @Override
+    public Object clone() {
+       throw new RuntimeException();
+    }
+   
+    public native E get(int index);
 
-	@Override
+    @Override
+    public Iterator<E> iterator(){
+    	return new HashItr(0);
+    }
+    
+    @Override
 	public native int size();
+    
+    private class HashItr implements Iterator<E> {
+        private int nextIndex;
 
-	private class HashSetIterator implements Iterator<E> {
-		private int position;
-		private boolean removeOK;
+        public HashItr(int index) {
+            nextIndex = index;
+        }
 
-		public HashSetIterator() {
-			position = 0;
-			removeOK = false;
-		}
+        public boolean hasNext() {
+            return nextIndex < size();
+        }
 
-		public boolean hasNext() {
-			return position < size();
-		}
+        public E next() {
+            checkForComodification();
+            if (!hasNext())
+                throw new NoSuchElementException();
+            return get(nextIndex++);
+        }
 
-		public E next() {
-			checkForComodification();
-			if (!hasNext()) {
-				throw new NoSuchElementException();
-			}
-			E result = get(position);
-			position++;
-			removeOK = true;
-			return result;
-		}
+        public boolean hasPrevious() {
+            return nextIndex > 0;
+        }
 
-		public void remove() {
-			if (!removeOK) {
-				throw new IllegalStateException();
-			}
-			E key = get(position - 1);
-			HashSet.this.remove(key);
-			position--;
-			removeOK = false;
-		}
+        public E previous() {
+            checkForComodification();
+            if (!hasPrevious())
+                throw new NoSuchElementException();
 
-		final void checkForComodification() {
-			// FIXME: what is this method for?
-		}
-	}
+            return get(nextIndex--);
+        }
+
+        public int nextIndex() {
+            return nextIndex;
+        }
+
+        public int previousIndex() {
+            return nextIndex - 1;
+        }
+
+        public void remove() {
+            throw new RuntimeException();
+        }
+
+        public void set(E e) {
+        	throw new RuntimeException();
+        }
+
+        public void add(E e) {
+            throw new RuntimeException();
+        }
+
+        final void checkForComodification() {
+        }
+    }
 
 }
+
