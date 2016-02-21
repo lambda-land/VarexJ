@@ -1,13 +1,11 @@
 package gov.nasa.jpf.vm;
 
-import java.util.Stack;
-import java.util.Queue;
-import java.util.LinkedList;
-import java.util.Iterator;
+import java.util.Vector;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Set;
@@ -17,25 +15,24 @@ import cmu.conditional.Conditional;
 import cmu.conditional.Function;
 import cmu.conditional.One;
 import de.fosd.typechef.featureexpr.FeatureExpr;
-import de.fosd.typechef.featureexpr.sat.True;
 import gov.nasa.jpf.annotation.MJI;
+
 
 public class JPF_java_util_HashSet extends NativePeer {
 
 	// XXX peer method names are defined as: name__parameterTypes__returntype
 	// I:int, V:void, Z: boolean ...
-	// you can replace the return value and the parameters by the corresponding
-	// Conditional<Type>
-
+	// you can replace the return value and the parameters by the corresponding Conditional<Type>
+	
+	// TODO replace Conditional<LinkedList<Integer>> by a varaibility-aware data structure
 	final Map<Integer, VSet> mySet = new HashMap<>();
 
 	@MJI
 	public void $init____V(MJIEnv env, int objref, FeatureExpr ctx) {
-		VSet setList = mySet.get(objref);
-		if (setList == null) {
 			mySet.put(objref, new VSet());
-		}
+
 	}
+
 
 	@MJI
 	public boolean add__Ljava_lang_Object_2__Z(MJIEnv env, int objref, final int argRef, FeatureExpr ctx) {
@@ -44,343 +41,157 @@ public class JPF_java_util_HashSet extends NativePeer {
 		mySet.put(objref, set);
 		return true;// always true
 	}
+	
+	@MJI
+	public boolean remove__Ljava_lang_Object_2__Z(MJIEnv env, int objref, final int argRef, FeatureExpr ctx) {
+		VSet set = mySet.get(objref);
+		set.remove(argRef);
+		mySet.put(objref, set);
+		return true;// always true
+	}
+	
+	@MJI
+	public Conditional<Integer> mycontains__Ljava_lang_Object_2__I(MJIEnv env, int objref, final int argRef, FeatureExpr ctx) {
+		VSet set = mySet.get(objref);
+		return set.contains(argRef);
+	}
 
 	@MJI
 	public Conditional<Integer> size____I(MJIEnv env, int objref, FeatureExpr ctx) {
 		VSet set = mySet.get(objref);
-		return set.length().simplify(ctx);
-
+		//System.out.println("from jpf "+ set.toString());
+		//set.printf();
+		return set.size(ctx);
+		
 	}
-
+	
 	@MJI
-	public Conditional<Integer> get__I__Ljava_lang_Object_2(final MJIEnv env, int objref, final int index,
-			FeatureExpr ctx) {
+	public Conditional<Integer> get__I__Ljava_lang_Object_2(final MJIEnv env, int objref, final int index, FeatureExpr ctx) {
 		VSet set = mySet.get(objref);
-		return set.get(index, ctx);
+		return set.get(index);
 	}
 
-	@MJI
-	public void printf____V(final MJIEnv env, int objref, FeatureExpr ctx) {
-		VSet set = mySet.get(objref);
-
-	}
-
-	// SeparateChainingHashTable<E> is a genaric implementation of the hash
-	// table ADT using separate chaining to avoid collisions.
-	public class SeparateChainingHashTable<E> {
-		private static final int DEFAULT_PRIME = 11; // default number of buckets
-
-		private Node[] buckets; // elements in this hash table
-		private int size; // number of elements in this hash table
-
-		// post: construct empty hash table with default number of buckets
-		public SeparateChainingHashTable() {
-			this(DEFAULT_PRIME);
-		}
-
-		// pre : n > 1
-		// post: construct empty hash table with p buckets where n <= p < 2 * n
-		@SuppressWarnings("unchecked")
-		public SeparateChainingHashTable(int n) {
-			if (n <= 1) {
-				throw new IllegalArgumentException();
-			}
-			int p = prime(n);
-			buckets = (Node[]) new SeparateChainingHashTable.Node[p];
-			size = 0;
-		}
-
-		// post: insert given value into this hash table if it does not contain
-		// given value
-		public void insert(E value) {
-			// rehash if 3 / 4 < size / buckets.length (RHS is load factor and
-			// denoted by lambda)
-			if (3 * buckets.length < 4 * size) {
-				rehash();
-			}
-			// separate chaining to avoid collisions
-			if (!contains(value)) {
-				int i = hash(value);
-				Node node = new Node(value);
-				node.next = buckets[i];
-				buckets[i] = node;
-				size++;
-			}
-		}
-
-		// post: remove given value from this hash table if it contains given
-		// value
-		public void remove(E value) {
-			int i = hash(value);
-			if (buckets[i] != null) {
-				if (buckets[i].data.equals(value)) {
-					// value at front of list
-					buckets[i] = buckets[i].next;
-					size--;
-				} else {
-					// value not at front of list
-					Node current = buckets[i];
-					while (current.next != null && !current.next.data.equals(value)) {
-						// value not next in list
-						current = current.next;
-					}
-					// assertion: current.next == null ||
-					// current.next.data.equals(value)
-					if (current.next != null) {
-						// value next in list
-						current.next = current.next.next;
-						size--;
-					}
-				}
-			}
-		}
-
-		// post: return true if given value is contained in this hash table,
-		// false otherwise
-		public boolean contains(E value) {
-			int i = hash(value);
-			Node current = buckets[i];
-			while (current != null) {
-				if (current.data.equals(value)) {
-					// value at current node
-					return true;
-				}
-				// value not at current node
-				current = current.next;
-			}
-			// value not contained in this hash table
-			return false;
-		}
-
-		// post: return number of elements in this hash table
-		public int size() {
-			return size;
-		}
-
-		// post: return string representation of this hash table
-		public String toString() {
-			if (size == 0) {
-				return "[]";
-			} else {
-				// find first list
-				int i = 0;
-				while (buckets[i] == null) {
-					i++;
-				}
-				// print elements in first list
-				Node current = buckets[i];
-				String result = "[" + current.data;
-				while (current.next != null) {
-					current = current.next;
-					result = result + ", " + current.data;
-				}
-				// find and print elements in all other lists
-				for (int j = i + 1; j < buckets.length; j++) {
-					current = buckets[j];
-					while (current != null) {
-						result = result + ", " + current.data;
-						current = current.next;
-					}
-				}
-				result = result + "]";
-				return result;
-			}
-		}
-
-		// print hash table to output
-		// NOTE: output is formatted "nicely" if values are no more than six
-		// characters long
-		public void debug() {
-			System.out.println("debug output");
-			System.out.printf("index: data:\n");
-			for (int i = 0; i < buckets.length; i++) {
-				// print row for list of values
-				System.out.printf("%-4d   ", i);
-				Node node = buckets[i];
-				if (node == null) {
-					System.out.printf("%s\n", "null");
-				} else {
-					System.out.printf("%-6s", node.data);
-					node = node.next;
-					while (node != null) {
-						System.out.printf(" --> %-6s", node.data);
-						node = node.next;
-					}
-					System.out.println();
-				}
-			}
-			System.out.println("size: " + size);
-			System.out.println();
-		}
-
-		// rehash this hash table
-		@SuppressWarnings("unchecked")
-		private void rehash() {
-			Node[] temp = buckets;
-			int p = prime(2 * buckets.length);
-			buckets = (Node[]) new SeparateChainingHashTable.Node[p];
-			size = 0;
-			for (int i = 0; i < temp.length; i++) {
-				Node node = temp[i];
-				while (node != null) {
-					insert(node.data);
-					node = node.next;
-				}
-			}
-		}
-
-		// hash function for this hash table
-		private int hash(E value) {
-			return Math.abs(value.hashCode()) % buckets.length;
-		}
-
-		// TODO: inner class comment
-		private class Node {
-			private E data;
-			private Node next;
-
-			public Node(E value) {
-				data = value;
-				next = null;
-			}
-		}
-
-		// pre : n > 1
-		// post: return smallest prime greater than or equal to given number
-		private static int prime(int n) {
-			// TODO: check preconditions
-			// use sieve of Eratosthenes to find all primes p with 2 <= p < 2 *
-			// n
-			Queue<Integer> queue = new LinkedList<Integer>();
-			Stack<Integer> stack = new Stack<Integer>();
-			// add all integers i with 2 <= i < 2 * n to queue
-			for (int i = 2; i < 2 * n; i++) {
-				queue.add(i);
-			}
-			// add all primes p with p < 2 * n to stack
-			while (!queue.isEmpty()) {
-				// remove next largest prime from front of queue
-				int p = queue.remove();
-				// push p onto stack of prime numbers
-				stack.push(p);
-				// remove multiples of p from queue
-				Iterator<Integer> iterator = queue.iterator();
-				while (iterator.hasNext()) {
-					int i = iterator.next();
-					if (i % p == 0) {
-						// p divides i
-						iterator.remove();
-					}
-				}
-			}
-			// find smallest prime p with n <= p
-			// there exists prime p such that n < p < 2 * n by Bertrand's
-			// theorem
-			// assertion: !stack.isEmpty()
-			int p = stack.pop();
-			// assertion: !stack.isEmpty()
-			int q = stack.pop();
-			while (q >= n) {
-				// assertion: !stack.isEmpty()
-				p = q;
-				q = stack.pop();
-			}
-			return p;
-		}
-	}
 }
 
 class VSet {
-
-	private class Entry {
-		Integer key;
-		FeatureExpr value;
-		Entry next;
-
-		public Entry() {
-		}
-
-		public Entry(Integer key, FeatureExpr value) {
+	
+	class Entry{
+		public int key;
+		public FeatureExpr value; 
+		public Entry(int key, FeatureExpr value){
 			this.key = key;
 			this.value = value;
-			this.next = null;
 		}
+	}
+	
+	private Map<Integer, FeatureExpr> set;
+	static Entry [] myList;
+	static Conditional<Integer>[][] dp;
+	
+	public VSet(){
+		this.set = new HashMap<Integer, FeatureExpr>();
+	}
+	
+	public void add(Integer key, FeatureExpr ctx){
+		FeatureExpr tmp  = this.set.get(key);
+		if(tmp != null){
+			this.set.put(key,  tmp.or(ctx));
+		}else{
+			this.set.put(key,  ctx);
+		}
+		dp = null;
+	}
+	
+	public void remove(Integer key){
+		this.set.remove(key);
+		dp = null;
+	}
+	public void clear(){
+		
+	}
 
-		public Conditional<Integer> length() {
-			Conditional<Integer> t;
-			if (this.next == null)
-				t = new One<>(0);
-			else
-				t = this.next.length();
-			t = t.mapf(this.value, new BiFunction<FeatureExpr, Integer, Conditional<Integer>>() {
+	public boolean isEmpty(){
+		return this.set.isEmpty();
+	}
+	
+	public Conditional<Integer> size(FeatureExpr ctx){
+		Conditional<Integer> t = new One<>(0);
+		//Iterator it = this.set.entrySet().iterator();
+		for (Map.Entry<Integer, FeatureExpr> entry : this.set.entrySet()) {
+		   // Integer key = entry.getKey();
+		    FeatureExpr value = entry.getValue();
+			t = t.mapf(value, new BiFunction<FeatureExpr, Integer, Conditional<Integer>>() {
 				@Override
 				public Conditional<Integer> apply(FeatureExpr ctx, Integer x) {
 					// @SuppressWarnings("unchecked")
 					return ChoiceFactory.create(ctx, new One<>(x + 1), new One<>(x));
 				}
 			}).simplify();
-			return t;
+		}
+		return t;
+	}
+
+	 public void toList(){
+		myList = new Entry[this.set.size()];
+		int i = 0; 
+		for(Map.Entry<Integer, FeatureExpr> entry : this.set.entrySet()){
+			 Integer key = entry.getKey();
+			 FeatureExpr value = entry.getValue();
+			 myList[i] = new Entry(key,value);
+			 i++;
 		}
 	}
 
-	static public Conditional<Integer> getEntry(Entry e, int index) {
-		if (e == null)
-			return new One<>(0);
-		if (index == 0) {
-			return ChoiceFactory.create(e.value, new One<>(e.key), getEntry(e.next, index));
-		} else {
-			return ChoiceFactory.create(e.value, getEntry(e.next, index - 1), getEntry(e.next, index));
+	 public void createTable(){
+		this.toList();
+		final int n = this.set.size();
+		dp =  (Conditional<Integer>[][]) new Conditional[n][n];
+		
+		for(int i = 0; i < dp.length; i++){
+        	for(int j = 0; j < dp[i].length; j++){
+        		dp[i][j] = new One<>(0);
+        	}
+        }
+        
+		//initial step
+		dp[0][n-1] = ChoiceFactory.create(myList[n-1].value, new One<>(myList[n-1].key), new One<>(0));
+		for(int i = n-2; i >= 0; i--){
+			dp[0][i] = ChoiceFactory.create(myList[i].value, new One<>(myList[i].key), dp[0][i+1]);
 		}
-	}
-
-	Entry table;
-	public int size = 0;
-
-	public VSet() {
-		table = null;
-	}
-
-	public void add(Integer key, FeatureExpr ctx) {
-		Entry node = new Entry(key, ctx);
-		Entry cur = this.table;
-
-		while (cur != null) {
-			if (cur.key == key) {
-				cur.value = cur.value.or(ctx);
-				size++;
-				return;
+		
+		//create the dp table 
+		for(int i = 1; i < n; i++){
+			for(int j = n-i-1; j >= 0; j--){
+				dp[i][j] = ChoiceFactory.create(myList[j].value, dp[i-1][j+1], dp[i][j+1]);
 			}
-			cur = cur.next;
 		}
-
-		node.next = table;
-		table = node;
-		size++;
-
+	
 	}
 
-	public FeatureExpr contains(Integer key) {
-		Entry cur = table;
-		while (cur != null) {
-			if (cur.key == key) {
-				return cur.value;
-			}
-			cur = cur.next;
+	
+	public void printf(){
+		for(int i = 0; i < set.size() -1; i++){
+			System.out.print(dp[0][i].toString());
 		}
-		return null;
+		for(int i = 0; i < set.size() -1; i++){
+			System.out.println(myList[i].key);
+		}	
+	}
+	
+	public Conditional<Integer> get(int index){
+		if(dp == null) createTable();
+		return dp[index][0];
+	}
+	
+	public Conditional<Integer> contains(int argRef){
+		FeatureExpr ctx = this.set.get(argRef);
+		if(ctx != null) return ChoiceFactory.create(ctx, new One<>(1), new One<>(0));
+		else return new One<>(0);
 	}
 
-	public Conditional<Integer> get(int index, FeatureExpr ctx) {
-		return getEntry(table, index).simplify(ctx);
+	@Override
+	public String toString(){
+		return this.set.entrySet().toString();
 	}
-
-	public boolean isEmpty() {
-		return (this.table == null);
-	}
-
-	public Conditional<Integer> length() {
-		if (table == null)
-			return new One<>(0);
-		return table.length();
-	}
+	
 }

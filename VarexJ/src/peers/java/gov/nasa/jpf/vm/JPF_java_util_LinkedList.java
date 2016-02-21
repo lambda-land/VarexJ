@@ -18,68 +18,127 @@ import gov.nasa.jpf.annotation.MJI;
  * @author Jens Meinicke
  *
  */
-public class JPF_java_util_LinkedList extends NativePeer {
-
-	// XXX peer method names are defined as: name__parameterTypes__returntype
-	// I:int, V:void, Z: boolean ...
-	// you can replace the return value and the parameters by the corresponding Conditional<Type>
-	
-	// TODO replace Conditional<LinkedList<Integer>> by a varaibility-aware data structure
-	final Map<Integer, Conditional<LinkedList<Integer>>> myLists = new HashMap<>();
+public class JPF_java_util_LinkedList extends NativePeer  {
+    final Map<Integer, OList> myLists = new HashMap<>();
 
 	@MJI
 	public void $init____V(MJIEnv env, int objref, FeatureExpr ctx) {
-		myLists.put(objref, ChoiceFactory.create(ctx, new One<>(new LinkedList<Integer>()), new One<LinkedList<Integer>>(null)).simplify());
+		myLists.put(objref, new OList());
 	}
+  
 
 	@MJI
 	public Conditional<Integer> size____I(MJIEnv env, int objref, FeatureExpr ctx) {
-		Conditional<LinkedList<Integer>> list = myLists.get(objref).simplify(ctx);
-		return list.map(new Function<LinkedList<Integer>, Integer>() {
-
-			@Override
-			public Integer apply(LinkedList<Integer> x) {
-				return x.size();
-			}
-
-		}).simplify(ctx);
+		OList list = myLists.get(objref);
+		return list.length();
+		
 	}
 
 	@MJI
 	public boolean add__Ljava_lang_Object_2__Z(MJIEnv env, int objref, final int argRef, FeatureExpr ctx) {
-		Conditional<LinkedList<Integer>> list = myLists.get(objref);
-		list = list.mapf(ctx, new BiFunction<FeatureExpr, LinkedList<Integer>, Conditional<LinkedList<Integer>>>() {
-
-			@Override
-			public Conditional<LinkedList<Integer>> apply(FeatureExpr ctx, LinkedList<Integer> list) {
-				@SuppressWarnings("unchecked")
-				LinkedList<Integer> clone = (LinkedList<Integer>) list.clone();
-				clone.add(argRef);
-				return ChoiceFactory.create(ctx, new One<>(clone), new One<>(list));
-
-			}
-
-		}).simplify();
+		OList list = myLists.get(objref);
+		list.add(argRef, ctx);
 		myLists.put(objref, list);
 		return true;// always true
 	}
 
 	@MJI
 	public Conditional<Integer> get__I__Ljava_lang_Object_2(final MJIEnv env, int objref, final int index, FeatureExpr ctx) {
-		Conditional<LinkedList<Integer>> list = myLists.get(objref).simplify(ctx);
-		return list.mapf(ctx, new BiFunction<FeatureExpr, LinkedList<Integer>, Conditional<Integer>>() {
+		OList list = myLists.get(objref);
+		return list.get(index, ctx);
+	}
+}
+class OList {
 
-			@Override
-			public Conditional<Integer> apply(FeatureExpr ctx, LinkedList<Integer> list) {
-				try {
-					return One.valueOf(list.get(index));
-				} catch (Exception e) {
-					env.ti.createAndThrowException(ctx, e.getClass().getName());
+	private class Entry {
+		Integer key;
+		FeatureExpr value;
+		Entry next;
+
+		public Entry() {
+		}
+
+		public Entry(Integer key, FeatureExpr value) {
+			this.key = key;
+			this.value = value;
+			this.next = null;
+		}
+
+		public Conditional<Integer> length() {
+			Conditional<Integer> t;
+			if (this.next == null)
+				t = new One<>(0);
+			else
+				t = this.next.length();
+			t = t.mapf(this.value, new BiFunction<FeatureExpr, Integer, Conditional<Integer>>() {
+				@Override
+				public Conditional<Integer> apply(FeatureExpr ctx, Integer x) {
+					// @SuppressWarnings("unchecked")
+					return ChoiceFactory.create(ctx, new One<>(x + 1), new One<>(x));
 				}
-				return One.valueOf(-1);
-			}
-
-		});
+			}).simplify();
+			return t;
+		}
 	}
 
+	static public Conditional<Integer> getEntry(Entry e, int index) {
+		if (e == null)
+			return new One<>(0);
+		if (index == 0) {
+			return ChoiceFactory.create(e.value, new One<>(e.key), getEntry(e.next, index));
+		} else {
+			return ChoiceFactory.create(e.value, getEntry(e.next, index - 1), getEntry(e.next, index));
+		}
+	}
+
+	Entry table;
+	public int size = 0;
+
+	public OList() {
+		table = null;
+	}
+
+	public void add(Integer key, FeatureExpr ctx) {
+		Entry node = new Entry(key, ctx);
+		Entry cur = this.table;
+
+		while (cur != null) {
+			if (cur.key == key) {
+				cur.value = cur.value.or(ctx);
+				size++;
+				return;
+			}
+			cur = cur.next;
+		}
+
+		node.next = table;
+		table = node;
+		size++;
+
+	}
+
+	public FeatureExpr contains(Integer key) {
+		Entry cur = table;
+		while (cur != null) {
+			if (cur.key == key) {
+				return cur.value;
+			}
+			cur = cur.next;
+		}
+		return null;
+	}
+
+	public Conditional<Integer> get(int index, FeatureExpr ctx) {
+		return getEntry(table, index).simplify(ctx);
+	}
+
+	public boolean isEmpty() {
+		return (this.table == null);
+	}
+
+	public Conditional<Integer> length() {
+		if (table == null)
+			return new One<>(0);
+		return table.length();
+	}
 }

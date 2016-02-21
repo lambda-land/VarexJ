@@ -43,15 +43,18 @@ public class HashSet<E>
     }
 
     @Override
-    public native boolean contains(Object o);
+    public boolean contains(Object o) {
+    	if(mycontains(o) == 0) return false;
+    	else return true;
+    }
+    
+    public native int mycontains(Object o);
+    
     @Override
     public native boolean add(E e);
 
     @Override
-    public boolean remove(Object o) {
-        throw new RuntimeException();
-    }
-
+    public native boolean remove(Object o);
     @Override
     public void clear() {
         throw new RuntimeException();

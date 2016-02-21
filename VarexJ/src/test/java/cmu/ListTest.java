@@ -24,7 +24,7 @@ public class ListTest extends TestJPF {
 	public void listTest() throws Exception {
 		if (verifyNoPropertyViolation(JPF_CONFIGURATION)) {
 			try {
-				NonStaticFeature[] options = getOptions(2);
+				NonStaticFeature[] options = getOptions(5);
 				
 				List<Integer> list = new LinkedList<>();
 				System.out.println("Create list");

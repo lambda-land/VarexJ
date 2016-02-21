@@ -1,6 +1,7 @@
 package cmu;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Vector;
 import java.util.Iterator;
 import org.junit.Test;
 
@@ -16,21 +17,24 @@ public class SetTest extends TestJPF {
 	public void setTest() throws Exception {
 		if (verifyNoPropertyViolation(JPF_CONFIGURATION)) {
 			try {
-				NonStaticFeature[] options = getOptions(5);
+				NonStaticFeature[] options = getOptions(3);
 				
 				HashSet<Integer> set = new HashSet<Integer>();
 		
-				
 				for (int i = 0; i < options.length; i++) {
 					if (options[i].a) {
 						System.out.println(i);
 						set.add(i);
 					}
 				}
-				  
-				System.out.println("Size: " + set.size());
+				
+				System.out.println("size: " + set.size());
 			    System.out.println(set);
-		
+			    System.out.println("contains: " + set.contains(0));
+			    System.out.println("contains: " + set.contains(1));
+				System.out.println("*****************************************");
+			    set.remove(1);
+			    System.out.println(set);
 				System.out.println("*****************************************");
 			
 				int sum = 0;
@@ -40,7 +44,7 @@ public class SetTest extends TestJPF {
 				if (sum == 10) {
 					System.out.println(set);
 				}	 
-			
+		
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
