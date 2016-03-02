@@ -24,7 +24,6 @@ public class JPF_java_util_HashSet extends NativePeer {
 	// I:int, V:void, Z: boolean ...
 	// you can replace the return value and the parameters by the corresponding Conditional<Type>
 	
-	// TODO replace Conditional<LinkedList<Integer>> by a varaibility-aware data structure
 	final Map<Integer, VSet> mySet = new HashMap<>();
 
 	@MJI
@@ -59,8 +58,9 @@ public class JPF_java_util_HashSet extends NativePeer {
 	@MJI
 	public Conditional<Integer> size____I(MJIEnv env, int objref, FeatureExpr ctx) {
 		VSet set = mySet.get(objref);
-		//System.out.println("from jpf "+ set.toString());
+		System.out.println("from jpf "+ set.toString() + " " + set.setSize());
 		//set.printf();
+		//System.out.println("*********************" + set.toString());
 		return set.size(ctx);
 		
 	}
@@ -86,7 +86,10 @@ class VSet {
 	
 	private Map<Integer, FeatureExpr> set;
 	static Entry [] myList;
-	static Conditional<Integer>[][] dp;
+	//static Conditional<Integer>[][] dp;
+	private Conditional<Integer>[] res;
+	private Conditional<Integer>[] prev;
+	private Conditional<Integer>[] cur;
 	
 	public VSet(){
 		this.set = new HashMap<Integer, FeatureExpr>();
@@ -99,12 +102,12 @@ class VSet {
 		}else{
 			this.set.put(key,  ctx);
 		}
-		dp = null;
+		res = null;
 	}
 	
 	public void remove(Integer key){
 		this.set.remove(key);
-		dp = null;
+		res = null;
 	}
 	public void clear(){
 		
@@ -115,12 +118,13 @@ class VSet {
 	}
 	
 	public Conditional<Integer> size(FeatureExpr ctx){
+		System.out.println("passing ctx is " + ctx);
 		Conditional<Integer> t = new One<>(0);
 		//Iterator it = this.set.entrySet().iterator();
 		for (Map.Entry<Integer, FeatureExpr> entry : this.set.entrySet()) {
 		   // Integer key = entry.getKey();
 		    FeatureExpr value = entry.getValue();
-			t = t.mapf(value, new BiFunction<FeatureExpr, Integer, Conditional<Integer>>() {
+			t = t.mapf(value.and(ctx), new BiFunction<FeatureExpr, Integer, Conditional<Integer>>() {
 				@Override
 				public Conditional<Integer> apply(FeatureExpr ctx, Integer x) {
 					// @SuppressWarnings("unchecked")
@@ -128,6 +132,7 @@ class VSet {
 				}
 			}).simplify();
 		}
+		System.out.println("size from size function "+ t);
 		return t;
 	}
 
@@ -145,42 +150,52 @@ class VSet {
 	 public void createTable(){
 		this.toList();
 		final int n = this.set.size();
-		dp =  (Conditional<Integer>[][]) new Conditional[n][n];
+		res = (Conditional<Integer>[]) new Conditional[n];
+		prev = (Conditional<Integer>[]) new Conditional[n];
+		cur = (Conditional<Integer>[]) new Conditional[n];
 		
-		for(int i = 0; i < dp.length; i++){
-        	for(int j = 0; j < dp[i].length; j++){
-        		dp[i][j] = new One<>(0);
-        	}
+        for(int i = 0; i < n; i++){
+        	res[i] = new One<>(0);
+        	prev[i] = new One<>(0);
+        	cur[i] = new One<>(0);
         }
-        
 		//initial step
-		dp[0][n-1] = ChoiceFactory.create(myList[n-1].value, new One<>(myList[n-1].key), new One<>(0));
+		prev[n-1] = ChoiceFactory.create(myList[n-1].value, new One<>(myList[n-1].key), new One<>(0));
 		for(int i = n-2; i >= 0; i--){
-			dp[0][i] = ChoiceFactory.create(myList[i].value, new One<>(myList[i].key), dp[0][i+1]);
+			prev[i] = ChoiceFactory.create(myList[i].value, new One<>(myList[i].key), prev[i+1]);
 		}
-		
+		res[0] = prev[0];
 		//create the dp table 
 		for(int i = 1; i < n; i++){
 			for(int j = n-i-1; j >= 0; j--){
-				dp[i][j] = ChoiceFactory.create(myList[j].value, dp[i-1][j+1], dp[i][j+1]);
+				cur[j] = ChoiceFactory.create(myList[j].value, prev[j+1], cur[j+1]);
+				//dp[i][j] = ChoiceFactory.create(myList[j].value, dp[i-1][j+1], dp[i][j+1]);
 			}
+			res[i] = cur[0];
+			//switch array
+			Conditional<Integer>[] tmp;
+			tmp = cur;
+			cur = prev;
+			prev =tmp;
 		}
 	
 	}
 
-	
+
 	public void printf(){
-		for(int i = 0; i < set.size() -1; i++){
-			System.out.print(dp[0][i].toString());
+		if(res == null){
+			createTable();
 		}
-		for(int i = 0; i < set.size() -1; i++){
-			System.out.println(myList[i].key);
-		}	
+		for(int i = 0; i < set.size(); i++){
+			System.out.print(res[i] + "\n");
+		}
+		//System.out.print(res[0] + "\n");
 	}
+
 	
 	public Conditional<Integer> get(int index){
-		if(dp == null) createTable();
-		return dp[index][0];
+		if(res == null) createTable();
+		return res[index];
 	}
 	
 	public Conditional<Integer> contains(int argRef){
@@ -189,6 +204,9 @@ class VSet {
 		else return new One<>(0);
 	}
 
+	public int setSize(){
+		return set.size();
+	}
 	@Override
 	public String toString(){
 		return this.set.entrySet().toString();

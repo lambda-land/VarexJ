@@ -29,7 +29,14 @@ public class SetTest extends TestJPF {
 				}
 				
 				System.out.println("size: " + set.size());
-			    System.out.println(set);
+			 	if(options[0].a && options[1].a){
+					//System.out.println("contains: " + set.contains(0));
+					System.out.println("size" + set.size());
+				}
+			 	/*
+				System.out.println("contains: " + set.contains(0));
+			 
+				System.out.println(set);
 			    System.out.println("contains: " + set.contains(0));
 			    System.out.println("contains: " + set.contains(1));
 				System.out.println("*****************************************");
@@ -44,7 +51,7 @@ public class SetTest extends TestJPF {
 				if (sum == 10) {
 					System.out.println(set);
 				}	 
-		
+		*/
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
