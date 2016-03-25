@@ -44,6 +44,7 @@ public class HashSet<E>
 
     @Override
     public boolean contains(Object o) {
+    	//System.out.println("contains " + o);
     	if(mycontains(o) == 0) return false;
     	else return true;
     }

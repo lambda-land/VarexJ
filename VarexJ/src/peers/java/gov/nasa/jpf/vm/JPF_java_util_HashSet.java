@@ -52,13 +52,13 @@ public class JPF_java_util_HashSet extends NativePeer {
 	@MJI
 	public Conditional<Integer> mycontains__Ljava_lang_Object_2__I(MJIEnv env, int objref, final int argRef, FeatureExpr ctx) {
 		VSet set = mySet.get(objref);
-		return set.contains(argRef);
+		return set.contains(argRef, ctx);
 	}
 
 	@MJI
 	public Conditional<Integer> size____I(MJIEnv env, int objref, FeatureExpr ctx) {
 		VSet set = mySet.get(objref);
-		System.out.println("from jpf "+ set.toString() + " " + set.setSize());
+		//System.out.println("from jpf "+ set.toString() + " " + set.setSize());
 		//set.printf();
 		//System.out.println("*********************" + set.toString());
 		return set.size(ctx);
@@ -96,6 +96,7 @@ class VSet {
 	}
 	
 	public void add(Integer key, FeatureExpr ctx){
+		//System.out.println("add key is " + key + " with ctx " + ctx);
 		FeatureExpr tmp  = this.set.get(key);
 		if(tmp != null){
 			this.set.put(key,  tmp.or(ctx));
@@ -118,7 +119,7 @@ class VSet {
 	}
 	
 	public Conditional<Integer> size(FeatureExpr ctx){
-		System.out.println("passing ctx is " + ctx);
+		//System.out.println("passing ctx is " + ctx);
 		Conditional<Integer> t = new One<>(0);
 		//Iterator it = this.set.entrySet().iterator();
 		for (Map.Entry<Integer, FeatureExpr> entry : this.set.entrySet()) {
@@ -130,9 +131,9 @@ class VSet {
 					// @SuppressWarnings("unchecked")
 					return ChoiceFactory.create(ctx, new One<>(x + 1), new One<>(x));
 				}
-			}).simplify();
+			}).simplify(ctx);
 		}
-		System.out.println("size from size function "+ t);
+		//System.out.println("size from size function "+ t);
 		return t;
 	}
 
@@ -198,11 +199,14 @@ class VSet {
 		return res[index];
 	}
 	
-	public Conditional<Integer> contains(int argRef){
-		FeatureExpr ctx = this.set.get(argRef);
-		if(ctx != null) return ChoiceFactory.create(ctx, new One<>(1), new One<>(0));
-		else return new One<>(0);
+	public Conditional<Integer> contains(int argRef, FeatureExpr ctx){
+		FeatureExpr tmp = this.set.get(argRef);
+		//System.out.println( "*******contains****" + ctx + " " + fe + " " + ChoiceFactory.create(ctx.and(fe), new One<>(1), new One<>(0)).simplify(fe));
+		//System.out.println("ref = " + argRef + ", ctx = " + ctx + ", tmp = " + tmp);
+		if(tmp == null) return new One<>(0);
+		return ChoiceFactory.create(tmp, new One<>(1), new One<>(0)).simplify(ctx);
 	}
+
 
 	public int setSize(){
 		return set.size();
