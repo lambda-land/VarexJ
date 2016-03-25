@@ -39,7 +39,6 @@ public class SetTest extends TestJPF {
 					if (options[i].a) {
 						set.add(i);
 					}
-					
 				}
 				int sum = 0;
 				for (Integer element : set) {
@@ -110,6 +109,10 @@ public class SetTest extends TestJPF {
 				assertTrue(tsize == set.size());
 				if(options[0].a){
 					assertTrue(tsize == set.size());
+				}
+				if(options[0].a && options[1].a){
+					set.add(5);
+					assertTrue(set.size() == 3);
 				}
 			}catch (Exception e) {
 				e.printStackTrace();
