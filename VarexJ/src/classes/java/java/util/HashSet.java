@@ -37,10 +37,7 @@ public class HashSet<E>
     }
 
 
-    @Override
-    public boolean isEmpty() {
-        return map.isEmpty();
-    }
+  
 
     @Override
     public boolean contains(Object o) {
@@ -52,10 +49,17 @@ public class HashSet<E>
     public native int mycontains(Object o);
     
     @Override
+    public boolean isEmpty(){
+    	if(size() == 0){return true;}
+    	else return false;
+    }
+    
+    @Override
     public native boolean add(E e);
 
     @Override
     public native boolean remove(Object o);
+    
     @Override
     public void clear() {
         throw new RuntimeException();

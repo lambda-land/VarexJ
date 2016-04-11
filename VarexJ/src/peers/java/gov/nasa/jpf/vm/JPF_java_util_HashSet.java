@@ -15,6 +15,7 @@ import cmu.conditional.Conditional;
 import cmu.conditional.Function;
 import cmu.conditional.One;
 import de.fosd.typechef.featureexpr.FeatureExpr;
+import de.fosd.typechef.featureexpr.FeatureExprFactory;
 import gov.nasa.jpf.annotation.MJI;
 
 
@@ -44,7 +45,7 @@ public class JPF_java_util_HashSet extends NativePeer {
 	@MJI
 	public boolean remove__Ljava_lang_Object_2__Z(MJIEnv env, int objref, final int argRef, FeatureExpr ctx) {
 		VSet set = mySet.get(objref);
-		set.remove(argRef);
+		set.remove(argRef, ctx);
 		mySet.put(objref, set);
 		return true;// always true
 	}
@@ -68,7 +69,7 @@ public class JPF_java_util_HashSet extends NativePeer {
 	@MJI
 	public Conditional<Integer> get__I__Ljava_lang_Object_2(final MJIEnv env, int objref, final int index, FeatureExpr ctx) {
 		VSet set = mySet.get(objref);
-		return set.get(index);
+		return set.get(index,ctx);
 	}
 
 }
@@ -106,16 +107,26 @@ class VSet {
 		res = null;
 	}
 	
-	public void remove(Integer key){
-		this.set.remove(key);
+	public void remove(Integer key, FeatureExpr ctx){
+		//System.out.println("remove " + key + " " + ctx);
+		for (Map.Entry<Integer, FeatureExpr> entry : this.set.entrySet()) {
+			//System.out.println("entry " + entry.getKey() + " " + entry.getValue());
+			Integer k = entry.getKey();
+			if(k.compareTo(key) == 0) {
+				FeatureExpr v = entry.getValue().and(ctx.not());
+				if(v.isContradiction()) {
+					//System.out.println("set.remove " + k);
+					this.set.remove(k);
+				} else {
+					entry.setValue(v);
+				}
+				break;
+			}
+		}
 		res = null;
 	}
 	public void clear(){
 		
-	}
-
-	public boolean isEmpty(){
-		return this.set.isEmpty();
 	}
 	
 	public Conditional<Integer> size(FeatureExpr ctx){
@@ -194,9 +205,12 @@ class VSet {
 	}
 
 	
-	public Conditional<Integer> get(int index){
-		if(res == null) createTable();
-		return res[index];
+	public Conditional<Integer> get(int index, FeatureExpr ctx){
+		if(res == null) {
+			System.out.println("this size is " + set.size());
+			createTable();
+		}
+		return res[index].simplify(ctx);
 	}
 	
 	public Conditional<Integer> contains(int argRef, FeatureExpr ctx){
