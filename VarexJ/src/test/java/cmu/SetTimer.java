@@ -23,47 +23,55 @@ public class SetTimer extends TestJPF {
 	// try both hashset;
 	static String[] JPF_CONFIGURATION = new String[]{/*"+interaction=interaction",*/ "+search.class= .search.RandomSearch", "+choice=MapChoice"};
 	
-  
+	private void testN(int n) {
+		//if (verifyNoPropertyViolation(JPF_CONFIGURATION)) {
+			try {
+				NonStaticFeature[] options = getOptions(n);
+				HashSet<Integer> set = new HashSet<Integer>();
+				for (int i = 0; i < options.length; i++) {
+					if (options[i].a) {
+						set.add(i);
+					}
+				}
+				//set.contains(0);  
+					/*
+				int sum = 0;
+				for (Integer element : set) {
+					sum += element; 
+				} 
+				//set.contains(0);
+			*/
+			    for(int i= 0; i <= n; i++){
+			    	set.remove(i);
+			    }
+				
+					
+			} catch (Exception e) {
+				e.printStackTrace();	
+			}
+		//		int[] s = new int[100];
+			
+}
+	
 	@Test
 	public void setTest() throws Exception {
 		//Map<Integer, Long> res = new HashMap<Integer,Long>(200);
-		PrintStream out = new PrintStream(new FileOutputStream("/home/meng/Documents/OutFile.txt"),true);
 		if (verifyNoPropertyViolation(JPF_CONFIGURATION)) {
-			try {
-				for(int n = 1; n <= 20; n++){
-					long startTime = System.currentTimeMillis();
-				    System.out.println("******************setTest*********************");
-					NonStaticFeature[] options = getOptions(n);
-				    HashSet<Integer> set = new HashSet<Integer>();
-				
-				    for (int i = 0; i < options.length; i++) {
-						if (options[i].a) {
-							set.add(i);
-						}
-					}
-				    
-				    /*
-				    for(int i= 0; i <= n; i++){
-				    	set.contains(i);
-				    }
-				    
-				
-				    int sum = 0;
-					for (Integer element : set) {
-						sum += element; 
-					}*/
-					
-					long endTime = System.currentTimeMillis();
-					long totalTime = endTime - startTime;
-					System.out.println("That took " + (totalTime) + " milliseconds in " + n + " features" );
-					out.print(totalTime + " ");
-					}
-				
-			
-				} catch (Exception e) {
-					e.printStackTrace();	
-				}
-		    out.close();
+		PrintStream out = new PrintStream(new FileOutputStream("/home/meng/Documents/OutFile.txt"),true);
+		HashSet<Integer> set = new HashSet<Integer>();
+		for(int i = 0; i < 50; ++i) set.add(i);
+		for(int i = 10; i <= 20; ++i) {
+			System.out.println("******************setTest*********************");
+			long startTime = System.currentTimeMillis();
+			//if (verifyNoPropertyViolation(JPF_CONFIGURATION)) {
+				testN(i);
+			//}
+			long endTime = System.currentTimeMillis();
+			long totalTime = endTime - startTime;
+			System.out.println("That took " + (totalTime) + " milliseconds in " + i + " features" );
+			out.print(totalTime + " ");
+		}
+	    out.close();
 		}
 	
 	}

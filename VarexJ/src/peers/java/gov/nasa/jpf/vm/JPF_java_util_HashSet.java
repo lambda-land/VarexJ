@@ -214,9 +214,11 @@ class VSet {
 	}
 	
 	public Conditional<Integer> contains(int argRef, FeatureExpr ctx){
+		//System.out.println("before contains size is " + set.size());
 		FeatureExpr tmp = this.set.get(argRef);
 		//System.out.println( "*******contains****" + ctx + " " + fe + " " + ChoiceFactory.create(ctx.and(fe), new One<>(1), new One<>(0)).simplify(fe));
 		//System.out.println("ref = " + argRef + ", ctx = " + ctx + ", tmp = " + tmp);
+		//System.out.println("after contains size is " + set.size());
 		if(tmp == null) return new One<>(0);
 		return ChoiceFactory.create(tmp, new One<>(1), new One<>(0)).simplify(ctx);
 	}
