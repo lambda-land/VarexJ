@@ -57,9 +57,12 @@ public class SetTimer extends TestJPF {
 	public void setTest() throws Exception {
 		//Map<Integer, Long> res = new HashMap<Integer,Long>(200);
 		if (verifyNoPropertyViolation(JPF_CONFIGURATION)) {
-		PrintStream out = new PrintStream(new FileOutputStream("/home/meng/Documents/OutFile.txt"),true);
+		//PrintStream out = new PrintStream(new FileOutputStream("/home/meng/Documents/OutFile.txt"),true);
 		HashSet<Integer> set = new HashSet<Integer>();
+		
+		// pre-load the values.
 		for(int i = 0; i < 50; ++i) set.add(i);
+		
 		for(int i = 10; i <= 20; ++i) {
 			System.out.println("******************setTest*********************");
 			long startTime = System.currentTimeMillis();
@@ -69,9 +72,9 @@ public class SetTimer extends TestJPF {
 			long endTime = System.currentTimeMillis();
 			long totalTime = endTime - startTime;
 			System.out.println("That took " + (totalTime) + " milliseconds in " + i + " features" );
-			out.print(totalTime + " ");
+			//out.print(totalTime + " ");
 		}
-	    out.close();
+	    //out.close();
 		}
 	
 	}

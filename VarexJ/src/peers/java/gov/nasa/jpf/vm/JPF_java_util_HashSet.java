@@ -29,8 +29,7 @@ public class JPF_java_util_HashSet extends NativePeer {
 
 	@MJI
 	public void $init____V(MJIEnv env, int objref, FeatureExpr ctx) {
-			mySet.put(objref, new VSet());
-
+		mySet.put(objref, new VSet());
 	}
 
 
