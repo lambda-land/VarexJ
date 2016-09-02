@@ -108,6 +108,7 @@ public class StackHandlerTest {
 		stack.setLocal(f1, 0, n1, true);
 		stack.setLocal(f1.not(), 0, n1, false);
 		assertTrue(stack.isRefLocal(f1, 0));
+		
 		assertFalse(stack.isRefLocal(f1.not(), 0));
 	}
 
@@ -317,7 +318,11 @@ public class StackHandlerTest {
 		}
 		IStackHandler clone = stack.clone();
 		assertEquals(stack, clone);
+		System.out.println(f1 + " before stack " + stack);
+		System.out.println(f1 + " before clone " + clone);
 		stack.pop(f1);
+		System.out.println(f1 + " after stack " + stack);
+		System.out.println(f1 + " after clone " + clone);
 		assertNotEquals(stack, clone);
 
 		clone = stack.clone();
@@ -655,11 +660,16 @@ public class StackHandlerTest {
 
 		stack.push(FeatureExprFactory.True(), A, true);
 		stack.push(FeatureExprFactory.True(), B, false);
+		//System.out.println(stack);
 
 		stack.swap(ctx);
+		//System.out.println(stack);
 
 		assertEquals(A, stack.pop(ctx));
+		//System.out.println(stack);
+
 		assertEquals(B, stack.pop(ctx));
+		//System.out.println(stack);
 
 		assertEquals(One.valueOf(-1), stack.getTop());
 	}
@@ -678,12 +688,20 @@ public class StackHandlerTest {
 		stack.push(FeatureExprFactory.True(), B, false);
 
 		stack.swap(ctx);
+		System.out.println("swap *******************************" + ctx);
+		System.out.println(stack);
 
 		assertEquals(A, stack.pop(ctx));
+		System.out.println(stack);
+
 		assertEquals(B, stack.pop(ctx));
+		System.out.println(stack);
 
 		assertEquals(B, stack.pop(ctx.not()));
+		System.out.println(stack);
+
 		assertEquals(A, stack.pop(ctx.not()));
+		System.out.println(stack);
 
 		assertEquals(One.valueOf(-1), stack.getTop());
 	}

@@ -13,11 +13,11 @@ public class StackHandlerFactory {
 	public static IStackHandler createStack() {
 		return f.createStack();
 	}
-
+/*
 	public static void activateBufferedStackHandler() {
 		f = new BufferedStackHandlerFactory();
 	}
-	
+	*/
 	public static void activateDefaultStackHandler() {
 		f = new DefaultStackHandlerFactory();
 	}
@@ -38,6 +38,7 @@ class DefaultStackHandlerFactory implements Factory {
 		return new StackHandler();
 	}
 }
+/*
 class BufferedStackHandlerFactory implements Factory {
 	@Override
 	public IStackHandler createStack(FeatureExpr ctx, int nLocals, int nOperands) {
@@ -48,3 +49,4 @@ class BufferedStackHandlerFactory implements Factory {
 		return new BufferedStackHandler();
 	}
 }
+*/

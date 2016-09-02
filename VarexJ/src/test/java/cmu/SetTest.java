@@ -18,6 +18,7 @@ public class SetTest extends TestJPF {
 	// try both hashset;
 	static String[] JPF_CONFIGURATION = new String[]{/*"+interaction=interaction",*/ "+search.class= .search.RandomSearch", "+choice=MapChoice"};
 	
+	
   
 	@Test
 	public void setTest() throws Exception {

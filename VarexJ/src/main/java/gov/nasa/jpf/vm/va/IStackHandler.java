@@ -6,6 +6,7 @@ import cmu.conditional.Conditional;
 import de.fosd.typechef.featureexpr.FeatureExpr;
 import gov.nasa.jpf.vm.va.StackHandler.Type;
 
+
 /**
  * Interface for variability-aware implementations of a method stack.
  * 
@@ -27,7 +28,7 @@ public interface IStackHandler {
 	
 	public abstract int getLength();
 	
-	public abstract Conditional<Stack> getStack();
+	//public abstract Conditional<Stack> getStack();
 
 	/**
 	 * Pushes the local variable at the index position to the stack.

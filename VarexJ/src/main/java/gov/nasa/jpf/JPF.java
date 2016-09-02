@@ -318,8 +318,8 @@ public class JPF implements Runnable {
       
       // Set StackHandlerFactory
       String stackHandlerFactory = config.getString("stack", "");
-      if (stackHandlerFactory.equals("BufferedStackHandler")) {
-      	StackHandlerFactory.activateBufferedStackHandler();
+      if (factory.equals("X")) {
+    	  StackHandlerFactory.activateDefaultStackHandler();
       } else {
       	StackHandlerFactory.activateDefaultStackHandler();
       }

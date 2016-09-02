@@ -19,10 +19,9 @@ import gov.nasa.jpf.util.test.TestJPF;
 
 
 
-public class SetTimer extends TestJPF {
+public class StackMemoryTest extends TestJPF {
 	// try both hashset;
 	static String[] JPF_CONFIGURATION = new String[]{/*"+interaction=interaction",*/ "+search.class= .search.RandomSearch", "+choice=MapChoice"};
-	
 	
 	private void testN(int n) {
 		//if (verifyNoPropertyViolation(JPF_CONFIGURATION)) {
@@ -34,8 +33,13 @@ public class SetTimer extends TestJPF {
 						set.add(i);
 					}
 				}
+				for(int i = 0; i < options.length; i++){
+					if(options[0].a){
+						set.add(i);
+					}
+				}
 				//set.contains(0);  
-			
+					
 				int sum = 0;
 				for (Integer element : set) {
 					//System.out.println("");
@@ -61,7 +65,7 @@ public class SetTimer extends TestJPF {
 		PrintStream out = new PrintStream(new FileOutputStream("/home/meng/Documents/VStack.txt"),true);
 		HashSet<Integer> set = new HashSet<Integer>();
 		for(int i = 0; i < 50; ++i) set.add(i);
-		for(int i = 20; i <= 25; ++i) {
+		for(int i = 29; i <= 29; ++i) {
 			System.out.println("******************setTest*********************");
 			long startTime = System.currentTimeMillis();
 			
