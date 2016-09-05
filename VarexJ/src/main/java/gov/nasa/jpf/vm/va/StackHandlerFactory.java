@@ -21,6 +21,10 @@ public class StackHandlerFactory {
 	public static void activateDefaultStackHandler() {
 		f = new DefaultStackHandlerFactory();
 	}
+	
+	public static IStackHandler createStack2(FeatureExpr ctx, int nLocals, int nOperands) {
+		return f.createStack(ctx, nLocals, nOperands);
+	}
 }
 
 interface Factory {
@@ -31,11 +35,11 @@ interface Factory {
 class DefaultStackHandlerFactory implements Factory {
 	@Override
 	public IStackHandler createStack(FeatureExpr ctx, int nLocals, int nOperands) {
-		return new StackHandler(ctx, nLocals, nOperands);
+		return new StackHandlerLog(ctx, nLocals, nOperands);
 	}
 	@Override
 	public IStackHandler createStack() {
-		return new StackHandler();
+		return new StackHandlerLog();
 	}
 }
 /*

@@ -4,7 +4,7 @@ import java.util.Collection;
 
 import cmu.conditional.Conditional;
 import de.fosd.typechef.featureexpr.FeatureExpr;
-import gov.nasa.jpf.vm.va.StackHandler.Type;
+
 
 
 /**
@@ -14,6 +14,13 @@ import gov.nasa.jpf.vm.va.StackHandler.Type;
  *
  */
 public interface IStackHandler {
+	public enum Type {
+		INT, FLOAT, LONG, DOUBLE
+	}
+	
+	public enum StackInstruction {
+		DUP_X1, DUP2_X2, DUP2_X1, DUP2, DUP, DUP_X2, SWAP
+	}
 	
 	public abstract FeatureExpr getCtx();
 

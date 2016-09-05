@@ -5,7 +5,7 @@ import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.*;
-/*
+
 public class Log {
 	static Logger logger = null;
 	public static void init() {
@@ -42,4 +42,3 @@ public class Log {
 		}
 	} 
 }
-*/

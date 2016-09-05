@@ -61,7 +61,7 @@ public class SetTimer extends TestJPF {
 		PrintStream out = new PrintStream(new FileOutputStream("/home/meng/Documents/VStack.txt"),true);
 		HashSet<Integer> set = new HashSet<Integer>();
 		for(int i = 0; i < 50; ++i) set.add(i);
-		for(int i = 20; i <= 25; ++i) {
+		for(int i = 5; i <= 5; ++i) {
 			System.out.println("******************setTest*********************");
 			long startTime = System.currentTimeMillis();
 			

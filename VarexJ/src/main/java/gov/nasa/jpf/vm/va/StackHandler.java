@@ -30,14 +30,6 @@ import gov.nasa.jpf.vm.Types;
  */
 public class StackHandler implements Cloneable, IStackHandler {
 
-	enum Type {
-		INT, FLOAT, LONG, DOUBLE
-	}
-	
-	enum StackInstruction {
-		DUP_X1, DUP2_X2, DUP2_X1, DUP2, DUP, DUP_X2, SWAP
-	}
-
 	/** Locals are directly accessed with index **/
 	protected Conditional<Entry>[] locals;
 
