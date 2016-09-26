@@ -46,10 +46,14 @@ public class Store {
 	}
 
 	public static void print() {
-		try (PrintWriter writer = new PrintWriter("stacklog.csv", "UTF-8")){
+		try (PrintWriter writer = new PrintWriter("/home/meng/stacklog.csv", "UTF-8")){
 			writer.print(';');
 			for (SHFactory factory : StackHandlerFactory.SHFactory.values()) {
 				writer.print(factory);
+				writer.print(';');
+			}
+			for (SHFactory factory : StackHandlerFactory.SHFactory.values()) {
+				writer.print("V" + factory);
 				writer.print(';');
 			}
 			writer.println();
@@ -65,7 +69,7 @@ public class Store {
 					}
 					System.out.println();
 				}
-        StackFactory.activateCStack();
+				StackFactory.activateCStack();
 				Object[] initArgs = entry.get(0).args;
 				//if(entry.get(0).methodName.equals("<init>") || entry.get(0).methodName.equals("<clinit>")) continue;
 				Measurement measurement = new Measurement(entry.get(0).methodName);
@@ -101,8 +105,8 @@ public class Store {
 				StackFactory.activateVStack();
 				initArgs = entry.get(0).args;
 				//if(entry.get(0).methodName.equals("<init>") || entry.get(0).methodName.equals("<clinit>")) continue;
-			    measurement = new Measurement(entry.get(0).methodName);
-				measures.add(measurement);
+			    //measurement = new Measurement(entry.get(0).methodName);
+				//measures.add(measurement);
 				for (SHFactory factory : StackHandlerFactory.SHFactory.values()) {
 					StackHandlerFactory.setFactory(factory);
 					IStackHandler checkStack = StackHandlerFactory.createStack2((FeatureExpr) initArgs[0],
