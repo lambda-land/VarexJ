@@ -1,35 +1,19 @@
 package gov.nasa.jpf.vm.va;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Map.*;
-
-import cmu.conditional.BiFunction;
-import cmu.conditional.ChoiceFactory;
-import cmu.conditional.Conditional;
-import cmu.conditional.Function;
-import cmu.conditional.One;
-import cmu.conditional.VoidBiFunction;
+import java.util.*;
+import cmu.conditional.*;
+import gov.nasa.jpf.vm.MJIEnv;
+import gov.nasa.jpf.vm.va.IStackHandler.Type;
 import de.fosd.typechef.featureexpr.FeatureExpr;
 import de.fosd.typechef.featureexpr.FeatureExprFactory;
-import gov.nasa.jpf.vm.MJIEnv;
 import gov.nasa.jpf.vm.Types;
 
-
-import de.fosd.typechef.featureexpr.FeatureExpr;
-import de.fosd.typechef.featureexpr.FeatureExprFactory;
-
-class VStack {
+class VStack implements IVStack{
 	public int size;
 	public Conditional<Entry>[] slots;
 	public Conditional<Integer> [] slot1;
 	Conditional<Integer> top = new One<>(0);
+	public FeatureExpr stackCTX;
 	/*
 	public void getStackWidth(final int count){
 		Conditional<Entry> slot2;
@@ -45,9 +29,15 @@ class VStack {
 		}
 	}
 	*/
+	public VStack() {
+		size = -1;
+		slots = (Conditional<Entry>[]) new Conditional[0];
+		stackCTX = FeatureExprFactory.True();
+	}
 	public VStack(int nOperands) {
 		size = -1;
 		slots = (Conditional<Entry>[]) new Conditional[nOperands];
+		stackCTX = FeatureExprFactory.True();
 	}
 	
     public void clear(FeatureExpr ctx){
@@ -55,20 +45,20 @@ class VStack {
     		pop(ctx);
     	}
     }
-    VStack copy(){
-    	VStack clone = new VStack(slots.length);
-    	clone.size = this.size;
-    	for(int i = 0; i <= size; i++){
-    		clone.slots[i] = slots[i];
-    	}
-    	return clone;
-    }
 
+	public FeatureExpr getCtx() {
+		return stackCTX;
+	}
+	
+	public void setCtx(FeatureExpr ctx) {
+		stackCTX = ctx;
+	}
     /**
      * hasAnyRef 
      */
+    
     Boolean tmp = false;
-    public Conditional<Boolean> hasAnyRef(FeatureExpr ctx) {
+    public boolean hasAnyRef(FeatureExpr ctx) {
     	Conditional<Boolean> res = new One<>(false);
     	for(int i = 0; i <= this.size; i++){
     		final int j = i;
@@ -89,8 +79,9 @@ class VStack {
 				}
 			}).simplify();
     	}
-    	return res.simplify(ctx);
+    	return res.simplify(ctx).getValue();
 	}
+    
     
     /**
      * getSlots
@@ -155,9 +146,22 @@ class VStack {
 
 	}
 	
+	public void pushTrueEntry(final Conditional<Entry> value) {
+		resize();
+		try {
+			slots[++size] = value.clone();
+		} catch (CloneNotSupportedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return;
+	}
+	
 	
 	public void pushEntry(final FeatureExpr ctx, final Conditional<Entry> value) {
 		resize();
+		//slots[++size] = value.simplify(ctx);
+		
 		slots[++size] = ((Conditional<Entry>)value).mapfr(ctx, new BiFunction<FeatureExpr, Entry, Conditional<Entry>>() {
 
 			@Override
@@ -200,12 +204,24 @@ class VStack {
 						e = Entry.create((int)value, isRef);
 					} else if (value instanceof Long) {
 						long v = ((Long) value).longValue();
+						e = Entry.create((int) (v >> 32), isRef);
+						push(ctx, (int) v, isRef);
+						
+						/*long v = ((Long) value).longValue();
 						e = Entry.create((int) (v & 0xFFFFFFFFL), isRef);
 						add(f, (int) (v >> 32), isRef);
+						*/
 					} else if (value instanceof Double) {
+						
+						long v = Double.doubleToLongBits((Double) value);
+						e = Entry.create((int) (v >> 32), isRef);
+						push(ctx, (int) v, isRef);
+						
+						/*
 						long v = Double.doubleToLongBits((Double) value);
 						e = Entry.create((int) (v & 0xFFFFFFFFL), isRef);
 						add(f, (int) (v >> 32), isRef);
+						*/
 					} else if (value instanceof Float) {
 						e = Entry.create(Float.floatToIntBits((Float) value), isRef);
 						//clone.push(Float.floatToIntBits((Float) value), isRef);
@@ -236,7 +252,13 @@ class VStack {
 			return;
  		} else {
 			//System.out.println("push integer here");
-			add(ctx, (int)value, isRef);
+			if(value instanceof Long) {
+				long v = ((Long) value).longValue();
+				add(ctx, (int) (v >> 32), isRef);
+				add(ctx, (int) v, isRef);
+			} else {
+				add(ctx, (int)value, isRef);
+			}
 		}
 	}
 	
@@ -390,6 +412,7 @@ class VStack {
     public Conditional<Integer> peekValue(final FeatureExpr ctx, int offset){
     	return peekHelper(ctx, new One<Integer>(offset)).map(new Function<Entry, Integer>(){
 			public Integer apply(Entry e) {
+				if(e == null) return null;
 				return e.value;
 			}
 		}).simplify();
@@ -527,7 +550,7 @@ class VStack {
 		}).simplify();
 	}
 	
-	public Conditional<Boolean> isRef(FeatureExpr ctx, int offset){
+	public boolean isRef(FeatureExpr ctx, int offset){
 		return peekHelper(ctx, new One<Integer>(offset)).map(new Function<Entry, Boolean>(){
 				public Boolean apply(Entry e) {
 					if(e == null) {
@@ -536,10 +559,10 @@ class VStack {
 						return e.isRef;
 					}
 				}
-			}).simplify();
+			}).simplify().getValue();
 	}
 	
-	public Conditional<Boolean> isRefIndex(FeatureExpr ctx, int index) {
+	public boolean isRefLocal(FeatureExpr ctx, int index) {
 		Conditional<Integer> offset = index2offset(ctx, index);
     	return peekHelper(ctx, offset).map(new Function<Entry, Boolean>(){
 			public Boolean apply(Entry e) {
@@ -549,7 +572,7 @@ class VStack {
 					return e.isRef;
 				}
 			}
-		}).simplify();
+		}).simplifyValues().getValue();
 	}
 	
 	public void set(FeatureExpr ctx, final int offset, final int value, final boolean isRef) {
@@ -611,27 +634,11 @@ class VStack {
 	}
 	*/
 	
-	public Collection<Integer> getReferences() {
-		final List<Integer> references = new ArrayList();
-		for (int i = 0; i <= size; i++) {
-			slots[i].mapfr(FeatureExprFactory.True(), new VoidBiFunction<FeatureExpr, Entry>() {
-				public void apply(FeatureExpr c, Entry e) {
-			    	//System.out.println(size + " " + c + " " + e);
-					if(e == null) {
-						return;
-					}
-					if(e.isRef) {
-						references.add(e.value);
-					}
-				}
-	    	});
-		}
-		return references;
-	} 
+
 	
   
 	public Map<Entry, FeatureExpr> mapMerge(Map<Entry, FeatureExpr> mapTmp){
-		Map<Entry, FeatureExpr> map =  new HashMap<>();
+		Map<Entry, FeatureExpr> map =  new HashMap<Entry, FeatureExpr>();
 		for (Map.Entry<Entry, FeatureExpr> e : mapTmp.entrySet()) {
 			FeatureExpr v = e.getValue();
 			Entry k =e.getKey();
@@ -650,6 +657,15 @@ class VStack {
 			map = mapMerge(slots[i].toMap());
 		}
 		return map;
+	}
+	
+	VStack copy(){
+		VStack clone = new VStack(slots.length);
+		clone.size = this.size;
+		for(int i = 0; i <= size; i++){
+			clone.slots[i] = slots[i];
+	    }
+	    return clone;
 	}
 
     
@@ -776,7 +792,194 @@ class VStack {
 		return s;
 		//return slots[0].toString();
 	}
+
+	@Override
+	public void init(Stack st) {
+
+	}
+
+	@Override
+	public int getStackWidth() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public Conditional<Integer> getTop() {
+		return topSet(FeatureExprFactory.True());
+	}
+
+	@Override
+	public int[] getSlots(FeatureExpr ctx) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Set<Integer> getAllReferences() {
+		final Set<Integer> references = new HashSet<Integer>();
+		for (int i = 0; i <= size; i++) {
+			slots[i].mapfr(FeatureExprFactory.True(), new VoidBiFunction<FeatureExpr, Entry>() {
+				public void apply(FeatureExpr c, Entry e) {
+			    	//System.out.println(size + " " + c + " " + e);
+					if(e == null) {
+						return;
+					}
+					if(e.isRef) {
+						references.add(e.value);
+					}
+				}
+	    	});
+		}
+		return references;
+	}
+
+	@Override
+	public <T> Conditional<T> peek(FeatureExpr ctx, int offset, Type t) {
+		switch (t) {
+		case DOUBLE:
+			final Conditional<Integer> tmp = peekValue(ctx, offset);
+			final Conditional<Integer> tmp1 = peekValue(ctx, offset+1);
+			Conditional<T> res = tmp.mapfr(ctx, new BiFunction<FeatureExpr, Integer, Conditional<T>>() {
+				public Conditional<T> apply(FeatureExpr c, final Integer x) {
+					return tmp1.simplify(c).map(new Function<Integer, T>(){
+						public T apply(Integer y){
+							return (T) (Double) Types.intsToDouble(x, y);
+						}
+					}).simplify();
+				}
+			}).simplify();
+			return res;
+			//stack.peekValue(ctx, offset).
+			//return (T) (Double) Types.intsToDouble(stack.peekValue(ctx, offset).getValue(), stack.peekValue(ctx, offset + 1).getValue());
+		case FLOAT:
+			return peekValue(ctx, offset).map(new Function<Integer, T>(){
+				public T apply(Integer x) {
+					return (T) (Float) Types.intToFloat(x);
+				}
+			}).simplify().simplifyValues();
+			//return (T) (Float) Types.intToFloat(stack.peek(offset));
+		case INT:
+			return peekValue(ctx, offset).map(new Function<Integer, T>(){
+				public T apply(Integer x) {
+					return (T) (Integer) x;
+				}
+			}).simplify().simplifyValues();
+		case LONG:
+			final Conditional<Integer> tmp2 = peekValue(ctx, offset);
+			final Conditional<Integer> tmp3 = peekValue(ctx, offset+1);
+			Conditional<T> res2 = tmp2.mapfr(ctx, new BiFunction<FeatureExpr, Integer, Conditional<T>>() {
+				public Conditional<T> apply(FeatureExpr c, final Integer x) {
+					return tmp3.simplify(c).map(new Function<Integer, T>(){
+						public T apply(Integer y){
+							return (T) (Long) Types.intsToLong(x, y);
+						}
+					}).simplify();
+				}
+			}).simplify();
+			return res2;
+			
+			//return (T) (Long) Types.intsToLong(stack.peek(offset), stack.peek(offset + 1));
+			
+		default:
+			return null;
+		}
+		//return (Conditional<T> )stack.peek(ctx, offset);  
+		 
+	}
+
+	@Override
+	public Conditional<Entry> popEntry(FeatureExpr ctx, boolean copyRef) {
+		return pop(ctx);
+	}
+
+	@Override
+	public void pop(FeatureExpr ctx, int n) {
+		for(int i = 0; i < n; i++){
+			pop(ctx);
+		}
+	}
+
+	@Override
+	public <T> Conditional<T> pop(FeatureExpr ctx, Type t) {
+		switch (t) {
+		case INT:
+			return popInteger(ctx).map(new Function<Integer, T>(){
+				public T apply(Integer x) {
+					return (T) x;
+				}
+			}).simplify().simplifyValues();
+			//res = Integer.valueOf(lo);
+
+			
+		case DOUBLE:
+			final Conditional<Integer> tmp = popInteger(ctx);
+			final Conditional<Integer> tmp1 = popInteger(ctx);
+			Conditional<T> res = tmp.mapfr(ctx, new BiFunction<FeatureExpr, Integer, Conditional<T>>() {
+				public Conditional<T> apply(FeatureExpr c, final Integer x) {
+					return tmp1.simplify(c).map(new Function<Integer, T>(){
+						public T apply(Integer y){
+							return (T) (Double) Types.intsToDouble(x, y);
+						}
+					}).simplify();
+				}
+			}).simplify();
+			return res;
+			//res = Types.intsToDouble(lo, clone.pop());
+
+		case FLOAT:
+			Conditional<Float> res1 = popInteger(ctx).map(new Function<Integer, Float>(){
+				public Float apply(Integer x) {
+					return  Types.intToFloat(x);
+				}
+			}).simplify().simplifyValues();
+			return (Conditional<T>)(res1);
+			//res = Types.intToFloat(lo);
+		case LONG:
+			final Conditional<Integer> reslong = popInteger(ctx);
+			final Conditional<Integer> reslong1 = popInteger(ctx);
+			Conditional<T> res2 = reslong.mapfr(ctx, new BiFunction<FeatureExpr, Integer, Conditional<T>>() {
+				public Conditional<T> apply(FeatureExpr c, final Integer x) {
+					return reslong1.simplify(c).map(new Function<Integer, T>(){
+						public T apply(Integer y){
+							return (T) (Long) Types.intsToLong(x, y);
+						}
+					}).simplify();
+				}
+			}).simplify();
+			return res2;
+			//res = Types.intsToLong(lo, clone.pop());
+			//break;
+		default:
+			return null;
+		}
+		//return (Conditional<T>)stack.popInteger(ctx);
+	}
+
+	@Override
+	public void setTop(FeatureExpr ctx, int i) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public IVStack clone() {
+    	VStack clone = new VStack(slots.length);
+    	clone.size = this.size;
+    	for(int i = 0; i <= size; i++){
+    		clone.slots[i] = slots[i];
+    	}
+    	return clone;
+	}
+
+	@Override
+	public Conditional<Stack> getStack() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }
+/*
 class Entry {
 	boolean isRef = false;
 	final int value;
@@ -832,4 +1035,4 @@ class Entry {
 		}
 		return new Entry(value, isRef); 
 	}
-}
+}*/

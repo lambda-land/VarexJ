@@ -1,4 +1,4 @@
- package gov.nasa.jpf.vm.va;
+package gov.nasa.jpf.vm.va;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -15,17 +15,12 @@ import de.fosd.typechef.featureexpr.FeatureExprFactory;
 import gov.nasa.jpf.vm.MJIEnv;
 import gov.nasa.jpf.vm.Types;
 
-
 /**
  * Stack implementation where locals are separated from stack.<br>
  * Locals: Conditional[]<br>
  * Stack: Conditional -Stack-
  * 
- * TODO:
- * 1. tolist 
- * 2. popEntry
- * 3. return value Conditional<Boolan> or Boolean
- * 4. understand some functions 
+ * @author Jens Meinicke
  *
  */
 public class StackHandler implements Cloneable, IStackHandler {
@@ -33,21 +28,19 @@ public class StackHandler implements Cloneable, IStackHandler {
 	/** Locals are directly accessed with index **/
 	protected Conditional<Entry>[] locals;
 
-	protected VStack stack;
-
+	//protected Conditional<Stack> stack;
+	protected IVStack stack = StackFactory.createVStack();
+	
 	protected int length = 0;
 
-	public FeatureExpr stackCTX;
+	//public FeatureExpr stackCTX;
 	
 	/* (non-Javadoc)
 	 * @see gov.nasa.jpf.vm.IStackHandler#getStackWidth()
 	 */
 	@Override
-	
 	public int getStackWidth() {
-		return stack.stackwidthHelper().keySet().size();
-		//return stack.topSet(FeatureExprFactory.True()).toList().size();
-		//return stack.toList().size();
+		return stack.getStackWidth();
 	}
 
 	/* (non-Javadoc)
@@ -84,28 +77,43 @@ public class StackHandler implements Cloneable, IStackHandler {
 		length = nLocals + nOperands;
 		locals = new Conditional[nLocals];
 		Arrays.fill(locals, nullValue);
+		
 		//stack = new One<>(new Stack(nOperands));
-		stack = new VStack(nOperands);
-		stackCTX = ctx;
+		stack = StackFactory.createVStack(nOperands);
+		stack.setCtx(ctx);
 	}
 
 	@SuppressWarnings("unchecked")
 	public StackHandler() {
-		//stack = new One<>(new Stack(0));
-		stack = new VStack(0);
 		locals = new Conditional[0];
-		stackCTX = FeatureExprFactory.True();
+		stack = StackFactory.createVStack();
+		stack.setCtx(FeatureExprFactory.True());
 	}
+	
+	
+	@SuppressWarnings("unchecked")
+	public StackHandler(FeatureExpr ctx, Stack st, Entry[] locals) {
+		stack = StackFactory.createVStack();
+		this.setCtx(ctx);
+		stack.init(st);
+		this.locals = new Conditional[locals.length];
+		for (int i = 0; i < locals.length; i++) {
+			this.locals[i] = new One<>(locals[i]);
+		}
+		length = st.slots.length + locals.length;
+	}
+	
 	
 	@Override
 	public FeatureExpr getCtx() {
-		return stackCTX;
+		return stack.getCtx();
 	}
 	
 	@Override
 	public void setCtx(FeatureExpr ctx) {
-		stackCTX = ctx;
+		stack.setCtx(ctx);
 	}
+
 
 	/* (non-Javadoc)
 	 * @see gov.nasa.jpf.vm.IStackHandler#clone()
@@ -124,8 +132,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 			}
 		}
 
-		//clone.stack = stack.map(CopyStack);
-		clone.stack = stack.copy();
+		clone.stack = this.stack.clone();
 		return clone;
 	}
 	
@@ -135,7 +142,6 @@ public class StackHandler implements Cloneable, IStackHandler {
 			return entry.copy();
 		}
 	};
-	
 	
 
 	/*
@@ -207,7 +213,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 	}
 
 	private Conditional<Entry> popEntry(FeatureExpr ctx, final boolean copyRef) {
-		return stack.pop(ctx);
+		return stack.popEntry(ctx, copyRef);
 	}
 
 	/* (non-Javadoc)
@@ -215,7 +221,22 @@ public class StackHandler implements Cloneable, IStackHandler {
 	 */
 	@Override
 	public void storeLongOperand(final FeatureExpr ctx, final int index) {
-	
+		/*
+		stack.mapf(ctx, new VoidBiFunction<FeatureExpr, Stack>() {
+
+			@Override
+			public void apply(final FeatureExpr f, final Stack stack) {
+				if (Conditional.isContradiction(f)) {
+					return;
+				}
+				locals[index + 1] = ChoiceFactory.create(f, popEntry(f, false), locals[index + 1]);
+				locals[index] = ChoiceFactory.create(f, popEntry(f, false), locals[index]);
+			}
+		});
+		locals[index] = locals[index].simplify();
+		locals[index + 1] = locals[index + 1].simplify();
+		stack = stack.simplify();
+		*/
 		locals[index + 1] = ChoiceFactory.create(ctx, popEntry(ctx, false), locals[index + 1]);
 		locals[index] = ChoiceFactory.create(ctx, popEntry(ctx, false), locals[index]);
 	
@@ -294,7 +315,6 @@ public class StackHandler implements Cloneable, IStackHandler {
 	 */
 	@Override
 	public boolean isRefLocal(FeatureExpr ctx, final int index) {
-		//System.out.println("stackhandler+++++++++++++++++++++" + this);
 		if (index < 0) {
 			return false;
 		}
@@ -313,8 +333,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 //			return locals[index].simplify(ctx).map(new IsRefLocal()).simplifyValues().getValue();
 		} else {
 			final int i = index - locals.length;
-			return stack.isRefIndex(ctx, i).simplifyValues().getValue();
-			
+			return stack.isRefLocal(ctx, i);
 		}
 	}
 	
@@ -348,7 +367,6 @@ public class StackHandler implements Cloneable, IStackHandler {
 		stack.push(ctx, value, isRef);
 	}
 
-
 	/* (non-Javadoc)
 	 * @see gov.nasa.jpf.vm.IStackHandler#pop(de.fosd.typechef.featureexpr.FeatureExpr)
 	 */
@@ -380,63 +398,13 @@ public class StackHandler implements Cloneable, IStackHandler {
 	public Conditional<Float> popFloat(final FeatureExpr ctx) {
 		return pop(ctx, Type.FLOAT);
 	}
+
 	/* (non-Javadoc)
 	 * @see gov.nasa.jpf.vm.IStackHandler#pop(de.fosd.typechef.featureexpr.FeatureExpr, gov.nasa.jpf.vm.StackHandler.Type)
 	 */
 	@Override
 	public <T> Conditional<T> pop(final FeatureExpr ctx, final Type t) {
-		switch (t) {
-		case INT:
-			return stack.popInteger(ctx).map(new Function<Integer, T>(){
-				public T apply(Integer x) {
-					return (T) x;
-				}
-			}).simplify().simplifyValues();
-			//res = Integer.valueOf(lo);
-
-			
-		case DOUBLE:
-			final Conditional<Integer> tmp = stack.popInteger(ctx);
-			final Conditional<Integer> tmp1 = stack.popInteger(ctx);
-			Conditional<T> res = tmp.mapfr(ctx, new BiFunction<FeatureExpr, Integer, Conditional<T>>() {
-				public Conditional<T> apply(FeatureExpr c, final Integer x) {
-					return tmp1.simplify(c).map(new Function<Integer, T>(){
-						public T apply(Integer y){
-							return (T) (Double) Types.intsToDouble(x, y);
-						}
-					}).simplify();
-				}
-			}).simplify();
-			return res;
-			//res = Types.intsToDouble(lo, clone.pop());
-
-		case FLOAT:
-			Conditional<Float> res1 = stack.popInteger(ctx).map(new Function<Integer, Float>(){
-				public Float apply(Integer x) {
-					return  Types.intToFloat(x);
-				}
-			}).simplify().simplifyValues();
-			return (Conditional<T>)(res1);
-			//res = Types.intToFloat(lo);
-		case LONG:
-			final Conditional<Integer> reslong = stack.popInteger(ctx);
-			final Conditional<Integer> reslong1 = stack.popInteger(ctx);
-			Conditional<T> res2 = reslong.mapfr(ctx, new BiFunction<FeatureExpr, Integer, Conditional<T>>() {
-				public Conditional<T> apply(FeatureExpr c, final Integer x) {
-					return reslong1.simplify(c).map(new Function<Integer, T>(){
-						public T apply(Integer y){
-							return (T) (Long) Types.intsToLong(x, y);
-						}
-					}).simplify();
-				}
-			}).simplify();
-			return res2;
-			//res = Types.intsToLong(lo, clone.pop());
-			//break;
-		default:
-			return null;
-		}
-		//return (Conditional<T>)stack.popInteger(ctx);
+		return stack.pop(ctx, t);
 	}
 
 	/* (non-Javadoc)
@@ -444,9 +412,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 	 */
 	@Override
 	public void pop(FeatureExpr ctx, final int n) {
-		for(int i = 0; i < n; i++){
-			 stack.pop(ctx);
-		}
+		stack.pop(ctx, n);
 	}
 
 	/* (non-Javadoc)
@@ -490,57 +456,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 	}
 
 	protected <T> Conditional<T> peek(FeatureExpr ctx, final int offset, final Type t) {
-		switch (t) {
-		case DOUBLE:
-			final Conditional<Integer> tmp = stack.peekValue(ctx, offset);
-			final Conditional<Integer> tmp1 = stack.peekValue(ctx, offset+1);
-			Conditional<T> res = tmp.mapfr(ctx, new BiFunction<FeatureExpr, Integer, Conditional<T>>() {
-				public Conditional<T> apply(FeatureExpr c, final Integer x) {
-					return tmp1.simplify(c).map(new Function<Integer, T>(){
-						public T apply(Integer y){
-							return (T) (Double) Types.intsToDouble(x, y);
-						}
-					}).simplify();
-				}
-			}).simplify();
-			return res;
-			//stack.peekValue(ctx, offset).
-			//return (T) (Double) Types.intsToDouble(stack.peekValue(ctx, offset).getValue(), stack.peekValue(ctx, offset + 1).getValue());
-		case FLOAT:
-			return stack.peekValue(ctx, offset).map(new Function<Integer, T>(){
-				public T apply(Integer x) {
-					return (T) (Float) Types.intToFloat(x);
-				}
-			}).simplify().simplifyValues();
-			//return (T) (Float) Types.intToFloat(stack.peek(offset));
-		case INT:
-			return stack.peekValue(ctx, offset).map(new Function<Integer, T>(){
-				public T apply(Integer x) {
-					return (T) (Integer) x;
-				}
-			}).simplify().simplifyValues();
-		case LONG:
-			final Conditional<Integer> tmp2 = stack.peekValue(ctx, offset);
-			final Conditional<Integer> tmp3 = stack.peekValue(ctx, offset+1);
-			Conditional<T> res2 = tmp2.mapfr(ctx, new BiFunction<FeatureExpr, Integer, Conditional<T>>() {
-				public Conditional<T> apply(FeatureExpr c, final Integer x) {
-					return tmp3.simplify(c).map(new Function<Integer, T>(){
-						public T apply(Integer y){
-							return (T) (Long) Types.intsToLong(x, y);
-						}
-					}).simplify();
-				}
-			}).simplify();
-			return res2;
-			
-			//return (T) (Long) Types.intsToLong(stack.peek(offset), stack.peek(offset + 1));
-			
-		default:
-			return null;
-		}
-		//return (Conditional<T> )stack.peek(ctx, offset);  
-		 
-		
+		return stack.peek(ctx, offset, t);
 	}
 
 	/* (non-Javadoc)
@@ -548,7 +464,8 @@ public class StackHandler implements Cloneable, IStackHandler {
 	 */
 	@Override
 	public boolean isRef(final FeatureExpr ctx, final int offset) {// change to Conditional<Boolean>
-		return stack.isRef(ctx, offset).getValue();
+		return stack.isRef(ctx, offset);
+
 	}
 
 	/* (non-Javadoc)
@@ -564,16 +481,16 @@ public class StackHandler implements Cloneable, IStackHandler {
 	 */
 	@Override
 	public Conditional<Integer> getTop() {
-		return stack.topSet(FeatureExprFactory.True());
+		return stack.getTop();
 	}
-
+	
 
 	/* (non-Javadoc)
 	 * @see gov.nasa.jpf.vm.IStackHandler#setTop(de.fosd.typechef.featureexpr.FeatureExpr, int)
 	 */
 	@Override
 	public void setTop(final FeatureExpr ctx, final int i) {
-		throw new RuntimeException();
+		stack.setTop(ctx, i);
 	}
 
 	/* (non-Javadoc)
@@ -597,7 +514,23 @@ public class StackHandler implements Cloneable, IStackHandler {
 	 */
 	@Override
 	public int[] getSlots(FeatureExpr ctx) {
-		throw new RuntimeException();
+		int[] slots = new int[length];
+		int i = 0;
+		for (Conditional<Entry> l : locals) {
+			if (l == null) {
+				slots[i++] = MJIEnv.NULL;
+				continue;
+			}
+			slots[i++] = l.simplify(ctx).getValue(true).value;
+		}
+		int[] stackSlots = new int[length - locals.length];
+		stackSlots = stack.getSlots(ctx);
+		int j = 0; 
+		while(i < length && j < length - locals.length) {
+			slots[i++] = stackSlots[j++];
+		}
+
+		return slots;
 	}
 
 	/* (non-Javadoc)
@@ -643,8 +576,6 @@ public class StackHandler implements Cloneable, IStackHandler {
 	 * @see gov.nasa.jpf.vm.IStackHandler#hasAnyRef(de.fosd.typechef.featureexpr.FeatureExpr)
 	 */
 	@Override
-	// return value?
-	
 	public boolean hasAnyRef(FeatureExpr ctx) {
 		for (Conditional<Entry> local : locals) {
 			if (local == null) {
@@ -656,8 +587,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 				}
 			}
 		}
-		//System.out.println("hasAnyRef +++++++++++++++++++++++++++++++++++++++++" + stack.hasAnyRef(ctx).simplify());
-		return stack.hasAnyRef(ctx).simplify().getValue();
+		return false || stack.hasAnyRef(ctx);
 	}
 
 	/*
@@ -669,7 +599,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 	 */
 	@Override
 	public void dup_x1(final FeatureExpr ctx) {
-		function(ctx, StackInstruction.DUP_X1);
+		stack.dup_x1(ctx);
 	}
 
 	/* (non-Javadoc)
@@ -677,7 +607,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 	 */
 	@Override
 	public void dup2_x2(final FeatureExpr ctx) {
-		function(ctx, StackInstruction.DUP2_X2);
+		stack.dup2_x2(ctx);
 	}
 
 	/* (non-Javadoc)
@@ -685,7 +615,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 	 */
 	@Override
 	public void dup2_x1(final FeatureExpr ctx) {
-		function(ctx, StackInstruction.DUP2_X1);
+		stack.dup2_x1(ctx);
 	}
 
 	/* (non-Javadoc)
@@ -693,7 +623,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 	 */
 	@Override
 	public void dup2(final FeatureExpr ctx) {
-		function(ctx, StackInstruction.DUP2);
+		stack.dup2(ctx);
 	}
 
 	/* (non-Javadoc)
@@ -701,7 +631,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 	 */
 	@Override
 	public void dup(final FeatureExpr ctx) {
-		function(ctx, StackInstruction.DUP);
+		stack.dup(ctx);
 	}
 
 	/* (non-Javadoc)
@@ -709,7 +639,7 @@ public class StackHandler implements Cloneable, IStackHandler {
 	 */
 	@Override
 	public void dup_x2(final FeatureExpr ctx) {
-		function(ctx, StackInstruction.DUP_X2);
+		stack.dup_x2(ctx);
 	}
 
 	/* (non-Javadoc)
@@ -717,47 +647,21 @@ public class StackHandler implements Cloneable, IStackHandler {
 	 */
 	@Override
 	public void swap(final FeatureExpr ctx) {
-		function(ctx, StackInstruction.SWAP);
+		stack.swap(ctx);
 	}
 
-	void function(final FeatureExpr ctx, final StackInstruction instruction) {
-		switch (instruction) {
-			case DUP_X1:
-				stack.dup_x1(ctx);
-				break;
-			case DUP2_X2:
-				stack.dup2_x2(ctx);
-				break;
-			case DUP:
-				stack.dup(ctx);
-				break;
-			case DUP2:
-				stack.dup2(ctx);
-				break;
-			case DUP2_X1:
-				stack.dup2_x1(ctx);
-				break;
-			case DUP_X2:
-				stack.dup_x2(ctx);
-				break;
-			case SWAP:
-				stack.swap(ctx);
-				break;
-			default:
-				throw new RuntimeException(instruction + "not supported");
-			}
-	}
+
 
 	@Override
 	public int getLength() {
 		return length;
 	}
-/*
+
 	@Override
 	public Conditional<Stack> getStack() {
-		throw new RuntimeException();
+		return stack.getStack();
 	}
-*/
+
 	@Override
 	public Set<Integer> getAllReferences() {
 		Set<Integer> references = new HashSet<>();
@@ -768,10 +672,8 @@ public class StackHandler implements Cloneable, IStackHandler {
 				}
 			}
 		}
-		
-		references.addAll(stack.getReferences());
-		
-		
+		references.addAll(stack.getAllReferences());
+
 		return references;
 	}
 
@@ -816,7 +718,5 @@ public class StackHandler implements Cloneable, IStackHandler {
 			
 		}).simplify();
 	}
-
-	
 
 }

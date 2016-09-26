@@ -5,8 +5,6 @@ import java.util.Collection;
 import cmu.conditional.Conditional;
 import de.fosd.typechef.featureexpr.FeatureExpr;
 
-
-
 /**
  * Interface for variability-aware implementations of a method stack.
  * 
@@ -14,6 +12,7 @@ import de.fosd.typechef.featureexpr.FeatureExpr;
  *
  */
 public interface IStackHandler {
+	
 	public enum Type {
 		INT, FLOAT, LONG, DOUBLE
 	}
@@ -35,7 +34,7 @@ public interface IStackHandler {
 	
 	public abstract int getLength();
 	
-	//public abstract Conditional<Stack> getStack();
+	public abstract Conditional<Stack> getStack();
 
 	/**
 	 * Pushes the local variable at the index position to the stack.

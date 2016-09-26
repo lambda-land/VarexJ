@@ -40,6 +40,14 @@ public class ChoiceFactory {
 		}
 	}
 	
+	public static void activateMapChoice() {
+		f = new MapChoiceFactory();
+	}
+	
+	public static void activateTreeChoice() {
+		f = new TreeChoiceFactory();
+	}
+	
 	public static List<Object[]> asParameter() {
 		List<Object[]> factorys = new ArrayList<>();
 		for (Factory f : Factory.values()) {
