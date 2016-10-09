@@ -139,4 +139,12 @@ public abstract class Conditional<T> {
     public boolean isOne() {
     	return false;
     }
+    
+    public FeatureExpr getFeatureExpr(T t) {
+    	throw new UnsupportedOperationException();
+    }
+    
+    public Conditional<T>[] split(FeatureExpr ctx) {
+    	throw new UnsupportedOperationException();
+    }
 }

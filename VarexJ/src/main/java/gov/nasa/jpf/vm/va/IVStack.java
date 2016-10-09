@@ -31,6 +31,8 @@ public interface IVStack {
 	
 	public abstract void clear(FeatureExpr ctx);
 	
+	public abstract void pushEntry(final FeatureExpr ctx, final Conditional<Entry> value);
+	
 	public abstract void push(final FeatureExpr ctx, final Object value, final boolean isRef);
 	
     public abstract void setRef(final FeatureExpr ctx, final int index, final boolean ref);

@@ -52,6 +52,7 @@ public class Store {
 				writer.print(factory);
 				writer.print(';');
 			}
+	
 			for (SHFactory factory : StackHandlerFactory.SHFactory.values()) {
 				writer.print("V" + factory);
 				writer.print(';');
@@ -60,7 +61,6 @@ public class Store {
 			
 			System.out.println("reexecute stack operations");
 			
-			int num = 0, min = 0, max = 0;
 			for (List<LogEntry> entry : entries.values()) {
 				if (verbose) {
 					System.out.println(entry.get(0).methodName);
@@ -125,6 +125,7 @@ public class Store {
 							}
 							logEntry.stackInstruction.invoke(checkStack, logEntry.args);
 						} catch (SecurityException | IllegalAccessException | InvocationTargetException e) {
+							e.printStackTrace();
 							start = 0;
 							break;
 						}
@@ -143,16 +144,23 @@ public class Store {
 
 				@Override
 				public int compare(Measurement o1, Measurement o2) {
-					return Long.compare(o1.measurement[SHFactory.Default.ordinal()], o2.measurement[SHFactory.Default.ordinal()]);
+					return Long.compare(o1.measurement[SHFactory.Buffered.ordinal()], o2.measurement[SHFactory.Buffered.ordinal()]);
 				}
 			});
 			
 			System.out.println("Print measurements");
-
-			System.out.println("num" + num + "min" + min + "max" + max);	
+			int num = 0;
+			long sum = 0, vsum = 0;
 			for (Measurement measurement : measures) {
-				writer.println(measurement.toString());
-			}
+					sum += measurement.measurement[2];
+					vsum += measurement.measurement[5];
+
+					writer.println(measurement.toString());
+				}
+				
+			
+			writer.println("sum is "+ sum + " vsum is" + vsum);
+			writer.println("dif is the time minus vtime and the num is the number of stackhandler runs faster than original one");
 		} catch (FileNotFoundException | UnsupportedEncodingException e1) {
 			e1.printStackTrace();
 		}
@@ -188,7 +196,8 @@ public class Store {
 			builder.append(methodName);
 			for (int i = 0; i < measurement.length; i++) {
 				builder.append(';');
-				builder.append(measurement[i]);
+				//if(i == 1 || i == 4) 
+					builder.append(measurement[i]);
 			}
 			return builder.toString();
 		}

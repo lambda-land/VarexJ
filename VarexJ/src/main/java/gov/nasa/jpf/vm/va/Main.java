@@ -1,133 +1,292 @@
 package gov.nasa.jpf.vm.va;
-
 import gov.nasa.jpf.jvm.JVMStackFrame;
 import gov.nasa.jpf.vm.*;
+import gov.nasa.jpf.vm.va.IStackHandler.Type;
 import cmu.conditional.*;
 import de.fosd.typechef.featureexpr.FeatureExpr;
 import de.fosd.typechef.featureexpr.FeatureExprFactory;
+import java.lang.*;
+import java.util.*;
+import java.util.*;
 
 class NonStaticFeature {
-  FeatureExpr a = FeatureExprFactory.createDefinedExternal("f" + Main.FeatureID++);
-  // boolean a = true;
-
+	FeatureExpr a = FeatureExprFactory.createDefinedExternal("f" + Main.FeatureID++);
 }
 
 public class Main {
-  public static int FeatureID = 0;
+	public static int FeatureID = 0;
+	public static boolean flag = true;
 
-  private static NonStaticFeature[] getOptions(int nrOptions) {
-    NonStaticFeature[] options = new NonStaticFeature[nrOptions];
-    for (int i = 0; i < options.length; i++) {
-      options[i] = new NonStaticFeature();
-    }
-    return options;
-  }
+	private static NonStaticFeature[] getOptions(int nrOptions) {
+		NonStaticFeature[] options = new NonStaticFeature[nrOptions];
+		for (int i = 0; i < options.length; i++) {
+			options[i] = new NonStaticFeature();
+		}
+		return options;
+	}
+	
+	public static FeatureExpr randomFEGen(NonStaticFeature[] options) {
+		int i = (int)(Math.random() * options.length);
+		FeatureExpr f = options[i].a;
+		if(Math.random() < 0.2) {
+			f = f.not();
+		}
+		if(Math.random() < 0.5) {
+			return f;
+		} else {
+			if(Math.random() < 0.5) return f.and(randomFEGen(options));
+			else return f.or(randomFEGen(options));
+		}
+	}
+	public static FeatureExpr randomFEComlexity(NonStaticFeature[] options, int size) {
+		if(size == 0) return FeatureExprFactory.True();
+		if(options.length == size) return randomFEGen(options);
+		else {
+			int sz = (int)(Math.random() * (size + 1));
+			//System.out.println(sz);
+			FeatureExpr f = options[(int)(Math.random() * options.length)].a;
+			for(int i = 0; i < sz - 1; i++) {
+				if(Math.random() < 0.5) {
+					f = f.and(options[(int)(Math.random() * options.length)].a);
+				} else {
+					f = f.or(options[(int)(Math.random() * options.length)].a);
+				}
+			}
+			if(Math.random() < 0.8) {
+				return f;	
+			} else {
+				return f.not();
+			}
+		}
+	}
+	// generate next feature with possibility 
+	public static FeatureExpr nextFeatureExpr(FeatureExpr ctx, double possibility, int feComplexity, NonStaticFeature[] options) {
+		
+		if(Math.random() < possibility) return ctx;
+		else return randomFEComlexity(options, feComplexity);
+	}
+	
+	public static Conditional<Integer> randomCIGen(NonStaticFeature[] options, int sz) {		
+		if(sz == 0) return One.valueOf((int)(Math.random() * 100000));
+		else {
+			return ChoiceFactory.create(randomFEComlexity(options, 1), randomCIGen(options, sz - 1), randomCIGen(options, sz - 1));
+		}
+	}
+	
+	public static Conditional<Integer> ratioGen(NonStaticFeature[] options, double ratio, int sz) {
+		if(Math.random() < ratio) {
+			return randomCIGen(options, sz);
+		} else {
+			return randomCIGen(options, 0);
+		}
+	}
+	
+	public static void activateTreeVStack() {
+		ChoiceFactory.activateTreeChoice();
+		StackFactory.activateVStack();
+	}
+	
+	public static void activateTreeCStack() {
+		ChoiceFactory.activateTreeChoice();
+		StackFactory.activateCStack();
+	}
+	
+	
 
-  public static FeatureExpr randomFEGen(NonStaticFeature[] options) {
-    int i = (int) (Math.random() * options.length);
-    FeatureExpr f = options[i].a;
-    if (Math.random() < 0.5) {
-      return f;
-    } else {
-      if (Math.random() < 0.5)
-        return f.and(randomFEGen(options));
-      else
-        return f.or(randomFEGen(options));
-    }
-  }
+	
 
-  public static Conditional<Integer> randomCIGen(NonStaticFeature[] options, int sz) {
-    if (sz == 0)
-      return One.valueOf((int) (Math.random() * Integer.MAX_VALUE));
-    else {
-      return ChoiceFactory.create(randomFEGen(options), randomCIGen(options, sz - 1), randomCIGen(options, sz - 1));
-    }
-  }
+	public static long testStackWith(IVStack stack, int operationsNum, FeatureExpr [] fes, String[] operations, Conditional<Integer>[] conditionalValues) {
+		long start = System.nanoTime();
+		
+		for(int i = 0; i < operationsNum; i ++) {
+			if(operations[i].equals("push")) {
+				stack.push(fes[i], conditionalValues[i], false);
+			} else{
+				stack.pop(fes[i], 1);
+				//Conditional<Integer> res = stack.pop(fes[i], 0);
+				//System.out.println("peek value" + res);
+			}
+		}
+		long end = System.nanoTime();
+		long duration = (end - start);
+		
+		return duration;
+	}
+	
+	
+    public static long[] testBufferedStack(int stackSize, NonStaticFeature[] options, int feComplexity, double ratio, int conditionalSize, int operationsNum, double possibility) {
+		//System.out.println("testAll " + ratio);
+		IVStack vstack = new VStack(stackSize);
+		IVStack vstack2 = new VStack(stackSize);
+		IVStack vstack3 = new VStack(stackSize);
+		/*
+		IVStack bstack = new ConditionalStack(stackSize);
+		IVStack bstack2 = new ConditionalStack(stackSize);
+		IVStack bstack3 = new ConditionalStack(stackSize);
+		*/
+		
+		IVStack bstack = new BufferedStack(stackSize);
+		IVStack bstack2 = new BufferedStack(stackSize);
+		IVStack bstack3 = new BufferedStack(stackSize);
+		
+		
+		FeatureExpr fe = randomFEComlexity(options, feComplexity);
+		FeatureExpr [] fes = new FeatureExpr[operationsNum];
+		String[] operations = new String[operationsNum];
+	    Conditional<Integer>[] conditionalValues = new Conditional[operationsNum];
+	    Conditional<Integer>[] cOutput = new Conditional[operationsNum];
+	    Conditional<Integer>[] vOutput = new Conditional[operationsNum];
+	    long[] ans = new long[3];
+	    
+		// generate operatios and keep # of push greater than pop
+		int count = 0, pushNum = 0;
+		for(int i = 0; i < operationsNum; i++) {
+			if(i == 0) {
+				operations[0] = "push";
+				pushNum++;
+			}
 
-  public static Conditional<Integer> ratioGen(NonStaticFeature[] options, double ratio, int sz) {
-    if (Math.random() < ratio) {
-      return randomCIGen(options, sz);
-    } else {
-      return randomCIGen(options, 0);
-    }
-  }
+			//generate operations
+			if(Math.random() < 0.5 && count > 0) {
+				operations[i] = "pop";
+				count--;
+			} else {
+				operations[i] = "push";
+				pushNum++;
+				count++;
+			}
+		}
 
-  public static void activateTreeVStack() {
-    ChoiceFactory.activateTreeChoice();
-    StackFactory.activateVStack();
-  }
+	
+	    
+	    LinkedList<Conditional<Integer>> values = new LinkedList<>();
+	    for(int i = 0; i < pushNum * ratio; i++) {
+	    	values.add(randomCIGen(options, 1));
+	    }
+	    for(int i = 0; i < pushNum - pushNum * ratio; i++) {
+	    	values.add(randomCIGen(options, 0));
+	    } 
+	    if(flag) {
+	    	System.out.println("pushNum" + pushNum);
+		    for(int i = 0; i < values.size(); i++) {
+		    	System.out.print(values.get(i) + " ");
+		    }
+		   
+	    }
+	    Collections.shuffle(values);
+	    
+	    for(int i = 0; i < operations.length; i++) {
+	    	if(operations[i] == "pop") conditionalValues[i] = new One(0);
+	    	else{
+	    		conditionalValues[i] = values.poll();
+	    	}
+	    }
+	    
+	    
+	    //generate nextFe with possibility
+	    List<Integer> nextFe = new ArrayList<>();
+	    for (int i = 0; i < operationsNum * possibility; i++) {
+	    	nextFe.add(1);
+	    }
+	    for (int i = 0; i < operationsNum - operationsNum * possibility; i++) {
+	    	nextFe.add(0);
+	    }
+	    
+	    Collections.shuffle(nextFe);
+	    
+	    for(int i = 0; i < operationsNum; i++ ) {
+	    	if(i == 0) fes[0] = fe;
+	    	else {
+	    		if(nextFe.get(i) == 1) fes[i] = fes[i-1];
+	    		else {
+	    			fes[i] = randomFEComlexity(options, feComplexity);
+	    			while(fes[i].equivalentTo(fes[i-1])) {
+	    				fes[i] = randomFEComlexity(options, feComplexity);
+	    			}
+	    		}
+	    	}
+	    }
+	   
+	    if(flag) {
+		    for(int i = 0; i < fes.length; i++) {
+		    	System.out.print(fes[i] + " ");
+		    }
+		    System.out.println();
+	    }
+	   
+		System.out.println("bpeek");
+		ans[0] = testStackWith(bstack, operationsNum, fes, operations, conditionalValues);
+		ans[0] = Math.min(ans[0], testStackWith(bstack3, operationsNum, fes, operations, conditionalValues));
+		System.out.println("bstack" + ans[0]);	
+		
+		bstack = null;
+		bstack2 = null;
+		bstack3 = null;
+        
+		System.out.println("vpeek");
+		ans[1] = testStackWith(vstack, operationsNum, fes, operations, conditionalValues);
+		ans[1] = Math.min(ans[1], testStackWith(vstack3, operationsNum, fes, operations, conditionalValues));
+		System.out.println("vstack" + ans[1]);	
+		vstack = null;
+		vstack2 = null;
+		vstack3 = null;
 
-  public static void activateTreeCStack() {
-    ChoiceFactory.activateTreeChoice();
-    StackFactory.activateCStack();
-  }
-
-  public static void testRatio(NonStaticFeature[] options, double ratio, int sz, int len) {
-    StackFrame stack = new JVMStackFrame(0, 20000);
-
-    for (int i = 0; i < len; ++i) {
-      FeatureExpr fe = FeatureExprFactory.True();
-      Conditional<Integer> c = ratioGen(options, ratio, sz);
-      System.out.println("" + i + " push " + fe + " " + c);
-      stack.push(fe, c);
-    }
-
-    for (int i = 0; i < len; ++i) {
-      FeatureExpr fe = randomFEGen(options);
-      if (Math.random() < 0.5) {
-        Conditional<Integer> c = ratioGen(options, ratio, sz);
-        System.out.println("" + i + " push " + fe + " " + c);
-        stack.push(fe, c);
-      } else {
-        Conditional<Integer> c = stack.pop(fe);
-        System.out.println("" + i + " pop " + fe + " " + c);
-      }
-    }
-  }
-
-  public static void main(String[] args) {
-    activateTreeCStack();
-    NonStaticFeature[] options = getOptions(5);
-    testRatio(options, 0.5, 1, 2);
-    Store.print();
-
-  }
-
-  public static void test(String[] args) {
-    // System.out.println("aaa");
-    int n = 5, m = 5;
-    // ChoiceFactory.activateMapChoice();
-    ChoiceFactory.activateTreeChoice();
-    // StackFactory.activateVStack();
-    StackFactory.activateCStack();
-    StackHandlerFactory.activateHybridStackHandler();
-    StackFrame stack = new JVMStackFrame(0, 20000);
-    // StackHandlerFactory.activateDefaultStackHandler();
-    // IStackHandler stack =
-    // StackHandlerFactory.createStack(FeatureExprFactory.True(), 0, 10);
-    NonStaticFeature[] options = getOptions(n);
-
-    for (int i = 0; i < m; i++) {
-      stack.push(FeatureExprFactory.True(), (i + 1) * 10, false);
-    }
-
-    for (int i = 0; i < options.length; i++) {
-      System.out.println(options[i].a);
-      // stack.push(options[i].a, (int)Math.random()*10000, false);
-      // stack.push(options[i].a.not(), (int)Math.random()*10000, false);
-      stack.push(options[i].a, (i + 1), false);
-      stack.push(options[i].a.not(), -(i + 1), false);
-    }
-
-    for (int i = 0; i < m; i++) {
-      stack.push(FeatureExprFactory.True(), (i + 1) * 10, false);
-    }
-    // stack.pop(options[0].a);
-    for (int i = 0; i < options.length; i++) {
-      System.out.println(options[i].a);
-      System.out.println(stack.pop(options[i].a).simplify());
-    }
-    Store.print();
-  }
-
+		if(flag) {
+			if(ans[0] > Math.pow(10, 10)) {
+				for(int i = 0; i < operationsNum; i++) {
+					System.out.println(operations[i] + " " + fes[i] + " " + conditionalValues[i]);
+				}
+			}
+		}
+		 return ans;
+		
+	}
+    
+	public static void main(String[] args) {
+        
+	
+		int n = 20, m = 2, nums = 20;
+		NonStaticFeature[] options = getOptions(5);
+		
+		int stackSize = 200;
+		int randomFEComlexity = 1;
+		double ratio = 0.5;
+		int conditionalSize = 1;
+		int operationsNum = 100;
+	    double possibility = 0.9;
+	    ChoiceFactory.activateTreeChoice();
+		
+		double[][] res = new double[n + 1][m + 1];
+		long[] ans = new long[2];
+		double ans_r;
+		
+		
+	
+		for(int i = 0; i <= n; i++) {
+			System.out.println("No."+ i);
+			double bsum = 0, vsum = 0;
+		
+		
+			for(int j = 0; j < nums; j++) {
+				//System.out.println("No."+ i);
+				System.out.print("nums " + j + " ");
+				ans = testBufferedStack(200, options, randomFEComlexity, ratio, conditionalSize, operationsNum, (double) (n - i) / n);
+				if(flag)System.out.println(ans[0] + " " + ans[1]);
+				bsum += ans[0]/1000;
+				vsum += ans[1]/1000;
+			
+			}
+			res[i][0] = bsum/nums;
+			res[i][1] = vsum/nums;
+			System.out.println(" ");
+			System.out.println(res[i][0] +";" + res[i][1] + "; ");
+		}
+		System.out.println("bsum; vsum");
+		for(int i = 0; i <= n; i ++) {
+				System.out.println(res[i][0] +";" + res[i][1]);
+		}
+	
+	
+	}
 }
+

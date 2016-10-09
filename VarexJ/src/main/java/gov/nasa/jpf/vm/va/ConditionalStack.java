@@ -70,7 +70,17 @@ public class ConditionalStack implements IVStack {
 			}
 		}).simplify();
 	}
-    
+	@Override
+	@SuppressWarnings("unchecked")
+	public void pushEntry(final FeatureExpr ctx, final Conditional<Entry> value) {
+		value.mapf(ctx, new VoidBiFunction<FeatureExpr, Entry>() {
+			@Override
+			public void apply(final FeatureExpr ctx, final Entry entry) {
+				push(ctx, entry.value, entry.isRef);
+			}
+		});
+	}
+
 
 	@Override
 	@SuppressWarnings("unchecked")

@@ -74,6 +74,9 @@ public class Stack {
 	}
 
 	public Integer pop() {
+		if(top == -1) {
+			return MJIEnv.NULL;
+		}
 		Integer res = slots[top] == null ? MJIEnv.NULL : slots[top].value;
 		slots[top] = null;
 		top--;
@@ -93,9 +96,9 @@ public class Stack {
 	}
 
 	public boolean isRef(int offset) {
-//		 if (top - offset < 0) {
-//			 return false;
-//		 }
+		 if (top - offset < 0) {
+			 return false;
+		 }
 		return slots[top - offset].isRef;
 	}
 
@@ -316,7 +319,8 @@ class Entry {
 
 	@Override
 	public boolean equals(Object o) {
-		if(o != null){
+		if(this == o) return true;
+		if(o instanceof Entry){
 			return ((Entry) o).value == value && ((Entry) o).isRef == isRef;
 		} else return false;
 		//return ((Entry) o).value == value && ((Entry) o).isRef == isRef;

@@ -157,15 +157,10 @@ public class StackHandler implements Cloneable, IStackHandler {
 	public void pushLocal(final FeatureExpr ctx, final int index) {
 		Conditional<Entry> value = locals[index];
 		if (value == null) {
-			value = new One<>(new Entry(MJIEnv.NULL, false));
+			value = new One<>(new Entry(0, false));
 		}
-		value.mapf(ctx, new VoidBiFunction<FeatureExpr, Entry>() {
+		stack.pushEntry(ctx, value);
 
-			@Override
-			public void apply(final FeatureExpr ctx, final Entry entry) {
-				push(ctx, entry.value, entry.isRef);
-			}
-		});
 	}
 
 	/* (non-Javadoc)
@@ -177,24 +172,14 @@ public class StackHandler implements Cloneable, IStackHandler {
 		if (value == null) {
 			value = new One<>(new Entry(0, false));
 		}
-		value.mapf(ctx, new VoidBiFunction<FeatureExpr, Entry>() {
+		stack.pushEntry(ctx, value);
 
-			@Override
-			public void apply(final FeatureExpr ctx, final Entry entry) {
-				push(ctx, entry.value, false);
-			}
-		});
 		value = locals[index + 1];
 		if (value == null) {
 			value = new One<>(new Entry(0, false));
 		}
-		value.mapf(ctx, new VoidBiFunction<FeatureExpr, Entry>() {
+		stack.pushEntry(ctx, value);
 
-			@Override
-			public void apply(final FeatureExpr ctx, final Entry entry) {
-				push(ctx, entry.value, false);
-			}
-		});
 	}
 
 	/* (non-Javadoc)

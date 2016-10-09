@@ -4,7 +4,9 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 
+import cmu.conditional.Conditional;
 import cmu.conditional.One;
+import cmu.utils.RuntimeConstants;
 import de.fosd.typechef.featureexpr.FeatureExpr;
 import gov.nasa.jpf.vm.ClassInfo;
 import gov.nasa.jpf.vm.DynamicElementInfo;
@@ -23,7 +25,7 @@ import nhandler.conversion.ConverterBase;
  */
 public class JPF2JVMGenericConverter extends JPF2JVMConverter {
 
-    @Override
+	@Override
     protected void setStaticFields(Class<?> JVMCls, StaticElementInfo sei, MJIEnv env, FeatureExpr ctx) throws ConversionException {
         ClassInfo ci = sei.getClassInfo();
         while (JVMCls != null) {
@@ -82,7 +84,7 @@ public class JPF2JVMGenericConverter extends JPF2JVMConverter {
                         // If the current field is of primitive type
                         else {
                             try {
-                                Utilities.setJVMPrimitiveField(fld[i], JVMCls, sei, fi);
+                                Utilities.setJVMPrimitiveField(fld[i], JVMCls, sei, fi, ctx);
                             } catch (IllegalAccessException e) {
                                 e.printStackTrace();
                             }
@@ -99,12 +101,21 @@ public class JPF2JVMGenericConverter extends JPF2JVMConverter {
         }
     }
 
+    /**
+     * Updates the values in the JVM object
+     */
     @Override
-    protected void setInstanceFields(Object JVMObj, DynamicElementInfo dei, MJIEnv env, FeatureExpr ctx) throws ConversionException {
+    public void setInstanceFields(Object JVMObj, DynamicElementInfo dei, MJIEnv env, FeatureExpr ctx) throws ConversionException {
         Class<?> cls = JVMObj.getClass();
         ClassInfo JPFCl = dei.getClassInfo();
-
+        if (!cls.getName().equals(JPFCl.getName())) {
+        	System.out.println(cls.getName() + " != " + JPFCl.getName());
+        }
+        
         while (cls != null) {
+        	if (JPFCl == null) {
+        		System.out.println("no classinfo for: " + dei.getObjectRef() + " " + cls);
+        	}
             Field fld[] = cls.getDeclaredFields();
 
             for (int i = 0; i < fld.length; i++) {
@@ -114,18 +125,37 @@ public class JPF2JVMGenericConverter extends JPF2JVMConverter {
 
                 // Provide access to private and final fields
                 fld[i].setAccessible(true);
+                if (JPFCl == null) {
+                	System.out.println(cls);
+                }
+                
                 FieldInfo fi = JPFCl.getInstanceField(fld[i].getName());
 
                 if (fi != null && isNonStaticField) {
                     // Field is of reference type
                     if (fi.isReference()) {
-                        int fieldValueRef = dei.getFields().getReferenceValue(fi.getStorageOffset()).getValue();
+                        int fieldValueRef = dei.getFields().getReferenceValue(fi.getStorageOffset()).simplify(ctx).getValue();
                         Object JVMField = obtainJVMObj(fieldValueRef, env, ctx);
-                        if (JVMField instanceof One) {
+                        if (JVMField instanceof Conditional) {
                             JVMField = ((One<?>) JVMField).getValue();
                         }
+                        if (JVMField instanceof Conditional[]) {
+							@SuppressWarnings("rawtypes")
+							final Conditional[] conditionals = (Conditional[]) JVMField;
+                        	long[] array = new long[conditionals.length];
+							for (int index = 0; index < conditionals.length; index++) {
+								array[index] = (long)conditionals[index].getValue();
+							}
+							JVMField = array;
+                        }
+                        
                         try {
-                            fld[i].set(JVMObj, JVMField);
+                        	if (fld[i].getType().equals(char[].class) &&
+                        			JVMField instanceof String) {
+                        		fld[i].set(JVMObj, ((String)JVMField).toCharArray());
+                        	} else {
+                        		fld[i].set(JVMObj, JVMField);
+                        	}
                         } catch (IllegalArgumentException e) {
                             e.printStackTrace();
                         } catch (IllegalAccessException e) {
@@ -135,7 +165,7 @@ public class JPF2JVMGenericConverter extends JPF2JVMConverter {
                     // Field is of primitive type
                     else {
                         try {
-                            Utilities.setJVMPrimitiveField(fld[i], JVMObj, dei, fi);
+                            Utilities.setJVMPrimitiveField(fld[i], JVMObj, dei, fi, ctx);
                         } catch (IllegalAccessException e) {
                             e.printStackTrace();
                         }
@@ -148,7 +178,7 @@ public class JPF2JVMGenericConverter extends JPF2JVMConverter {
     }
 
     @Override
-    protected void updateInstanceFields(Object JVMObj, DynamicElementInfo dei, MJIEnv env, FeatureExpr ctx) throws ConversionException {
+    public void updateInstanceFields(Object JVMObj, DynamicElementInfo dei, MJIEnv env, FeatureExpr ctx) throws ConversionException {
         Class<?> cls = JVMObj.getClass();
         ClassInfo JPFCl = dei.getClassInfo();
 
@@ -171,13 +201,14 @@ public class JPF2JVMGenericConverter extends JPF2JVMConverter {
                         int fieldValueRef = dei.getFields().getReferenceValue(fi.getStorageOffset()).getValue();
                         // If the field object is already in sync, skip.
                         // Otherwise, updateInstanceFields() gets called again and again
-                        if (ConverterBase.objMapJPF2JVM.containsKey(fieldValueRef)) {
+                        if (ConverterBase.updatedJPFObj.containsKey(fieldValueRef)) {
                             // TODO: Say that this field belongs to a class which contains a public field x
                             // TODO: if x is changed somewhere in the code, current impl could not reflect
                             // TODO: those changes to the corresponding JVMObject
                             continue;
                         }
                         Object JVMField = obtainJVMObj(fieldValueRef, env, ctx);
+                        ConverterBase.updatedJPFObj.put(fieldValueRef, JVMField);
                         try {
                             fld[i].set(JVMObj, JVMField);
                         } catch (IllegalArgumentException e) {
@@ -189,7 +220,7 @@ public class JPF2JVMGenericConverter extends JPF2JVMConverter {
                     // Field is of primitive type
                     else {
                         try {
-                            Utilities.setJVMPrimitiveField(fld[i], JVMObj, dei, fi);
+                            Utilities.setJVMPrimitiveField(fld[i], JVMObj, dei, fi, ctx);
                         } catch (IllegalAccessException e) {
                             e.printStackTrace();
                         }
@@ -207,19 +238,35 @@ public class JPF2JVMGenericConverter extends JPF2JVMConverter {
      * @param cl a JVM class
      * @return a new JVM object instantiated from the given class, cl
      */
-    protected Object instantiateFrom(Class<?> cl) {
+    @Override
+	protected Object instantiateFrom(Class<?> cl) {
+    	if (Modifier.isAbstract(cl.getModifiers()) ) {
+    		System.out.println("cannot instanciate abstract class: " + cl);
+    	}
+    	
         Object JVMObj = null;
-
+        
         if (cl == Class.class) {
             return cl;
         }
-
-        Constructor<?> ctor = getNoArgCtor(cl);
+        if (RuntimeConstants.debug) {
+        	System.out.println("create JVM object " + cl);
+        }
+        
+        if (cl.getName().equals(ClassLoader.class.getName())) {
+        	
+        	JVMObj = getClass().getClassLoader();
+        	System.out.println(cl + " -> " + JVMObj);
+        	return JVMObj;
+        }
+        
+        Constructor<?> constructor = getNoArgCtor(cl);
         try {
-            ctor.setAccessible(true);
-            JVMObj = ctor.newInstance();
+            constructor.setAccessible(true);
+            JVMObj = constructor.newInstance();
+            
         } catch (Exception e) {
-            System.out.println("Cannot instantiate from " + cl + " using ctor " + ctor);
+            System.out.println("Cannot instantiate from " + cl + " using no-arg constructor: " + constructor);
             e.printStackTrace();
         }
         return JVMObj;

@@ -23,6 +23,7 @@ import gov.nasa.jpf.Error;
 import gov.nasa.jpf.JPF;
 import gov.nasa.jpf.JPFShell;
 import gov.nasa.jpf.Property;
+import gov.nasa.jpf.annotation.Conditional;
 import gov.nasa.jpf.annotation.FilterField;
 import gov.nasa.jpf.tool.RunTest;
 import gov.nasa.jpf.util.DevNullPrintStream;
@@ -68,6 +69,7 @@ import java.util.List;
  * </ol>
  */
 public abstract class TestJPF implements JPFShell  {
+
   static PrintStream out = System.out;
 
   public static final String UNNAMED_PACKAGE = "";

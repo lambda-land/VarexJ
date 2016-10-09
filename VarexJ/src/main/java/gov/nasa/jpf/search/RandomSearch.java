@@ -34,6 +34,7 @@ import gov.nasa.jpf.JPF;
 import gov.nasa.jpf.vm.RestorableVMState;
 import gov.nasa.jpf.vm.ThreadInfo;
 import gov.nasa.jpf.vm.VM;
+import gov.nasa.jpf.vm.va.Store;
 
 /**
  * this is a straight execution pseudo-search - it doesn't search at all (i.e.
@@ -55,6 +56,22 @@ public class RandomSearch extends Search {
 	@SuppressWarnings("incomplete-switch")
 	public void search() {
 		try {
+			if (JPF.COVERAGE != null) {
+				// XXX some quick fix for coverage
+				File file = new File("coverage.xml");
+				System.out.println("Create file: " + file.getAbsolutePath());
+				XMLWriter writer = new XMLWriter(gov.nasa.jpf.JPF.COVERAGE);
+				try {
+					writer.writeToFile(file);
+				} catch (ParserConfigurationException | TransformerException e) {
+					System.out.println(e.getMessage());
+					for (StackTraceElement element : e.getStackTrace()) {
+						System.out.println(element);
+					}
+					e.printStackTrace();
+				}
+			}
+			
 			ThreadInfo.RUN_SIMPLE = true;
 			int depth = 0;
 			int paths = 0;
@@ -147,6 +164,8 @@ public class RandomSearch extends Search {
 				TraceComparator.compare();
 				TraceComparator.clear();
 			}
+			
+			Store.print();
 		}
 	}
 }

@@ -41,6 +41,7 @@ public class System {
   
   static {
 
+	in = createSystemIn();  
     out = createSystemOut();
     err = createSystemErr();
 
@@ -84,8 +85,8 @@ public class System {
         return cls.getEnumConstantsShared();
       }
       public void blockedOn(Thread t, Interruptible b) {
-        throw new UnsupportedOperationException("JavaLangAccess.blockedOn() not supported yet");
-//        t.blockedOn(b);
+//        throw new UnsupportedOperationException("JavaLangAccess.blockedOn() not supported yet");
+        t.blockedOn(b);
       }
       public void registerShutdownHook(int slot, Runnable r) {
         throw new UnsupportedOperationException("JavaLangAccess.registerShutdownHook() not supported yet");
@@ -100,8 +101,10 @@ public class System {
     };
   }
 
+
   static private native String[] getKeyValuePairs();
 
+  static private native InputStream createSystemIn();
   static private native PrintStream createSystemOut();
   static private native PrintStream createSystemErr();
 

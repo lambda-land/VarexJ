@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import de.fosd.typechef.featureexpr.FeatureExpr;
+import de.fosd.typechef.featureexpr.FeatureExprFactory;
 
 /**
  * Choice implementation as tree. 
@@ -110,8 +111,14 @@ class TreeChoice<T> extends IChoice<T> implements Cloneable {
 		return false;
 	}
 
+	@Override
 	public int hashCode() {
-		throw new RuntimeException("hashCode not designed");
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((elseBranch == null) ? 0 : elseBranch.hashCode());
+		result = prime * result + ((featureExpr == null) ? 0 : featureExpr.hashCode());
+		result = prime * result + ((thenBranch == null) ? 0 : thenBranch.hashCode());
+		return result;
 	}
 
 	@Override
@@ -200,4 +207,75 @@ class TreeChoice<T> extends IChoice<T> implements Cloneable {
 		return thenBranch.size() + elseBranch.size();
 	}
 
+	@Override
+    public FeatureExpr getFeatureExpr(T t) {
+		FeatureExpr tf = thenBranch.getFeatureExpr(t);
+		FeatureExpr ef = elseBranch.getFeatureExpr(t);
+		return tf.and(featureExpr).or(ef.andNot(featureExpr));
+	}
+	
+	public static <T> Conditional<T> createInstance(FeatureExpr featureExpr, Conditional<T> thenBranch, Conditional<T> elseBranch) {
+		if(featureExpr.isTautology()) return thenBranch;
+		if(featureExpr.isContradiction()) return elseBranch;
+		if(thenBranch instanceof TreeChoice) {
+			if(featureExpr.equivalentTo(((TreeChoice) thenBranch).featureExpr)) {
+				thenBranch = ((TreeChoice) thenBranch).thenBranch;
+			}
+		}
+		if(elseBranch instanceof TreeChoice) {
+			if(featureExpr.equivalentTo(((TreeChoice) elseBranch).featureExpr)) {
+				elseBranch = ((TreeChoice) elseBranch).elseBranch;
+			}
+		}
+		
+		if(thenBranch instanceof One && elseBranch instanceof One) {
+			if(thenBranch.equals(elseBranch)) {
+				return thenBranch;
+			}
+		}
+		
+		return new TreeChoice(featureExpr, thenBranch, elseBranch);
+	}
+	
+	@Override
+    public Conditional<T>[] split(FeatureExpr ctx) {
+		Conditional<T>[] ret = new Conditional[2]; 
+		Conditional<T>[] thenRet, elseRet;
+		
+		FeatureExpr and = ctx.and(featureExpr);
+		FeatureExpr andNot = ctx.andNot(featureExpr);
+
+		if (isContradiction(and)) {
+			elseRet = elseBranch.split(andNot);
+			ret[0] = elseRet[0];
+			ret[1] = createInstance(featureExpr, thenBranch, elseRet[1]);
+			return ret;
+		}
+
+		if (isContradiction(andNot)) {
+			thenRet = thenBranch.split(and);
+			ret[0] = thenRet[0];
+			ret[1] = createInstance(featureExpr, thenRet[1], elseBranch);
+			return ret;
+		}
+		
+		thenRet = thenBranch.split(and);
+		elseRet = elseBranch.split(andNot);
+
+		if(thenRet[0].equals(elseRet[0])) {
+			ret[0] = thenRet[0];
+		} else {
+			ret[0] = createInstance(featureExpr, thenRet[0], elseRet[0]);
+		}
+		
+		if(thenRet[1].equals(elseRet[1])) {
+			ret[1] = thenRet[1];
+		} else {
+			ret[1] = createInstance(featureExpr, thenRet[1], elseRet[1]);
+		}
+		
+		return ret;
+		
+    }
+	
 }

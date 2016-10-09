@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import de.fosd.typechef.featureexpr.FeatureExpr;
+import de.fosd.typechef.featureexpr.FeatureExprFactory;
 import gov.nasa.jpf.vm.MJIEnv;
 
 /**
@@ -193,4 +194,22 @@ public class One<T> extends Conditional<T> implements Cloneable {
 		}
 	}
 
+	@Override
+	public boolean isOne() {
+		return true;
+	}
+	
+	@Override
+    public FeatureExpr getFeatureExpr(T t) {
+		if(value == t) return FeatureExprFactory.True();
+		if(value != null && value.equals(t)) return FeatureExprFactory.True();
+		return FeatureExprFactory.False();
+	}
+    
+	@Override
+    public Conditional<T>[] split(FeatureExpr ctx) {
+    	return new Conditional[]{this, this};
+    }
+	
+	
 }

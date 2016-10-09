@@ -67,7 +67,7 @@ public class PUTSTATIC extends StaticFieldInstruction implements StoreInstructio
 				FeatureExpr feature = FeatureExprFactory.createDefinedExternal("CONFIG_" + fname);
 				featureNumber++;
 				System.out.println("Found feature #" + featureNumber + " - " + fname);
-				IChoice<Integer> create = ChoiceFactory.create(feature, One.valueOf(1), One.valueOf(0));
+				Conditional<Integer> create = ChoiceFactory.create(feature, One.valueOf(1), One.valueOf(0));
 				frame.pop(ctx);
 				frame.push(ctx, create);
 				break;

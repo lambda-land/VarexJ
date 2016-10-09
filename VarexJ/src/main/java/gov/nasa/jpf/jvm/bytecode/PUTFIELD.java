@@ -94,13 +94,12 @@ public class PUTFIELD extends InstanceFieldInstruction implements StoreInstructi
 							FeatureExpr feature = FeatureExprFactory.createDefinedExternal("CONFIG_" + className+ "." + fname + "-" + objRef);
 							PUTSTATIC.featureNumber++;
 							System.out.println("Found feature #" + PUTSTATIC.featureNumber + " - " + className+ "." + fname + "-" + objRef);
-							IChoice<Integer> create = ChoiceFactory.create(feature, One.valueOf(1), One.valueOf(0));
+							Conditional<Integer> create = ChoiceFactory.create(feature, One.valueOf(1), One.valueOf(0));
 							frame.pop(ctx);
 							frame.push(ctx, create);
 							break;
 						}
 					}
-					
 					return put(ctx, ti, frame, ei, false);
 
 				} else { // re-execution
@@ -115,6 +114,7 @@ public class PUTFIELD extends InstanceFieldInstruction implements StoreInstructi
 		});
 	}
 
+	@Override
 	public ElementInfo peekElementInfo(ThreadInfo ti) {
 		FieldInfo fi = getFieldInfo(null);
 		int storageSize = fi.getStorageSize();
@@ -124,18 +124,22 @@ public class PUTFIELD extends InstanceFieldInstruction implements StoreInstructi
 		return ei;
 	}
 
+	@Override
 	public int getLength() {
 		return 3; // opcode, index1, index2
 	}
 
+	@Override
 	public int getByteCode() {
 		return 0xB5;
 	}
 
+	@Override
 	public boolean isRead() {
 		return false;
 	}
 
+	@Override
 	public void accept(InstructionVisitor insVisitor) {
 		insVisitor.visit(this);
 	}
