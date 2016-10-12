@@ -9,6 +9,7 @@ import de.fosd.typechef.featureexpr.FeatureExprFactory;
 
 public interface IVStack {
 	
+  public void pushEntry(final FeatureExpr ctx, final Conditional<Entry> value);
 	public abstract void init(Stack st);
 		
 	public abstract int getStackWidth();
@@ -31,8 +32,6 @@ public interface IVStack {
 	
 	public abstract void clear(FeatureExpr ctx);
 	
-	public abstract void pushEntry(final FeatureExpr ctx, final Conditional<Entry> value);
-	
 	public abstract void push(final FeatureExpr ctx, final Object value, final boolean isRef);
 	
     public abstract void setRef(final FeatureExpr ctx, final int index, final boolean ref);
@@ -45,7 +44,7 @@ public interface IVStack {
 	
 	public <T> Conditional<T> pop(final FeatureExpr ctx, final Type t); 
 		
-	public abstract <T> void remove(final FeatureExpr ctx);
+	//public abstract <T> void remove(final FeatureExpr ctx);
 		
 	public abstract boolean isRef(FeatureExpr ctx, int offset);
 		

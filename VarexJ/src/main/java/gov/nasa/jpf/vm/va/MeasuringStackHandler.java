@@ -11,14 +11,14 @@ import gov.nasa.jpf.vm.StackFrame;
 public class MeasuringStackHandler implements IStackHandler {
 	
 	private final IStackHandler handler;
-	private StackFrame frame;
+	//private StackFrame frame;
 	
 	private static int index = 0;
 	private int id = index++;
 	
-	public MeasuringStackHandler(FeatureExpr ctx, int nLocals, int nOperands, StackFrame frame) {
-		this.frame = frame;
-		Store.add(this, frame.getMethodName(), null, ctx, nLocals, nOperands);
+	public MeasuringStackHandler(FeatureExpr ctx, int nLocals, int nOperands) {
+		//this.frame = frame;
+		Store.add(this, "Main", null, ctx, nLocals, nOperands);
 		handler = StackHandlerFactory.createStack2(ctx, nLocals, nOperands);// TODO
 	}
 
@@ -27,14 +27,14 @@ public class MeasuringStackHandler implements IStackHandler {
 		return id;
 	}
 	
-	public MeasuringStackHandler(IStackHandler handler, StackFrame frame) {
-		Store.add(this, frame.getMethodName(), null, FeatureExprFactory.True(), 0, 0);
-		this.frame = frame;
+	public MeasuringStackHandler(IStackHandler handler) {
+		Store.add(this, "", null, FeatureExprFactory.True(), 0, 0);
+		//this.frame = frame;
 		this.handler = handler.clone();
 	}
 
 	private void log(Method method, Object... args) {
-		Store.add(this, frame.getMethodName(), method, args);
+		Store.add(this, "", method, args);
 	}
 	
 	@Override
@@ -59,7 +59,7 @@ public class MeasuringStackHandler implements IStackHandler {
 
 	@Override
 	public IStackHandler clone() {
-		return new MeasuringStackHandler(handler, frame);
+		return new MeasuringStackHandler(handler);
 	}
 
 	@Override

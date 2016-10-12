@@ -462,10 +462,9 @@ public class BufferedStack implements IVStack {
 		// TODO Auto-generated method stub
 
 	}
-	@Override
-	public void pushEntry(FeatureExpr ctx, Conditional<Entry> value) {
-		// TODO Auto-generated method stub
-		
-	}
+  @Override
+  public void pushEntry(FeatureExpr ctx, Conditional<Entry> value) {
+    // TODO Auto-generated method stub
+  }
 
 }

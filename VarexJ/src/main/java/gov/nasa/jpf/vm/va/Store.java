@@ -98,7 +98,7 @@ public class Store {
 					}
 					long end = System.nanoTime();
 					long duration = (end - start);
-					
+					if(start == 0) duration  = 0;
 					measurement.measurement[factory.ordinal()] = duration;
 					
 				}
@@ -125,14 +125,13 @@ public class Store {
 							}
 							logEntry.stackInstruction.invoke(checkStack, logEntry.args);
 						} catch (SecurityException | IllegalAccessException | InvocationTargetException e) {
-							e.printStackTrace();
 							start = 0;
 							break;
 						}
 					}
 					long end = System.nanoTime();
 					long duration = (end - start);
-					
+					if(start == 0) duration  = 0;
 					measurement.measurement[factory.ordinal() + 3] = duration;
 					
 				}
@@ -144,23 +143,26 @@ public class Store {
 
 				@Override
 				public int compare(Measurement o1, Measurement o2) {
-					return Long.compare(o1.measurement[SHFactory.Buffered.ordinal()], o2.measurement[SHFactory.Buffered.ordinal()]);
+					return Long.compare(o1.measurement[3], o2.measurement[3]);
 				}
 			});
 			
 			System.out.println("Print measurements");
-			int num = 0;
-			long sum = 0, vsum = 0;
 			for (Measurement measurement : measures) {
-					sum += measurement.measurement[2];
-					vsum += measurement.measurement[5];
-
-					writer.println(measurement.toString());
-				}
-				
-			
-			writer.println("sum is "+ sum + " vsum is" + vsum);
-			writer.println("dif is the time minus vtime and the num is the number of stackhandler runs faster than original one");
+				writer.println(measurement.toString());
+			}
+		    int num = 0;
+	        long dsum = 0, bsum = 0, hsum = 0, vdsum = 0,vbsum = 0, vhsum = 0;
+	        for (Measurement measurement : measures) {
+	            dsum += measurement.measurement[0];
+	            bsum += measurement.measurement[1];
+	            hsum += measurement.measurement[2];
+	            vdsum += measurement.measurement[3];
+	            vbsum += measurement.measurement[4];
+	            vhsum += measurement.measurement[5];
+	           
+	        }
+	        writer.println( dsum + " "+ bsum + " "+ hsum  + " "+ vdsum + " " + vbsum + " " + vhsum);
 		} catch (FileNotFoundException | UnsupportedEncodingException e1) {
 			e1.printStackTrace();
 		}
@@ -196,8 +198,7 @@ public class Store {
 			builder.append(methodName);
 			for (int i = 0; i < measurement.length; i++) {
 				builder.append(';');
-				//if(i == 1 || i == 4) 
-					builder.append(measurement[i]);
+				builder.append(measurement[i]);
 			}
 			return builder.toString();
 		}

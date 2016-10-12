@@ -147,4 +147,51 @@ public abstract class Conditional<T> {
     public Conditional<T>[] split(FeatureExpr ctx) {
     	throw new UnsupportedOperationException();
     }
+    
+    public <U,Y> Conditional<U> fastApply(final Conditional<Y> rhs, final BiFunction<T, Y, Conditional<U>> f) {
+    	if(rhs instanceof One) {
+    		return this.mapfr(FeatureExprFactory.True(), new BiFunction<FeatureExpr, T, Conditional<U>>() {
+    			public Conditional<U> apply(final FeatureExpr cc, final T x) {
+    				return f.apply(x, rhs.getValue());
+    			}
+    		});
+    	}
+    	
+    	return this.mapfr(FeatureExprFactory.True(), new BiFunction<FeatureExpr, T, Conditional<U>>() {
+			public Conditional<U> apply(final FeatureExpr c, final T x) {
+				return rhs.simplify(c).mapfr(FeatureExprFactory.True(), new BiFunction<FeatureExpr, Y, Conditional<U>>() {
+					public Conditional<U> apply(final FeatureExpr cc, final Y y) {
+						return f.apply(x, y);
+					}
+				});
+			}
+		});
+    }
+    
+    public Conditional<T> fastUpdate(final Function<T,  Conditional<T>> f) {
+        return  mapfr(FeatureExprFactory.True(), new BiFunction<FeatureExpr, T, Conditional<T>>() {
+            public Conditional<T> apply(final FeatureExpr c, final T x) {
+                if(isContradiction(c)) return new One<>(x);
+                return f.apply(x);
+            }
+        });
+    }
+
+    protected Conditional<T> fastUpdate(FeatureExpr path, FeatureExpr ctx, final Function<T,  Conditional<T>> f) {
+        return  mapfr(ctx, new BiFunction<FeatureExpr, T, Conditional<T>>() {
+            public Conditional<T> apply(final FeatureExpr c, final T x) {
+                if(isContradiction(c)) return new One<>(x);
+                return f.apply(x);
+            }
+        });
+    }
+
+    public Conditional<T> fastUpdate(FeatureExpr ctx, final Function<T,  Conditional<T>> f) {
+        return  mapfr(ctx, new BiFunction<FeatureExpr, T, Conditional<T>>() {
+            public Conditional<T> apply(final FeatureExpr c, final T x) {
+                if(isContradiction(c)) return new One<>(x);
+                return f.apply(x);
+            }
+        });
+    }
 }

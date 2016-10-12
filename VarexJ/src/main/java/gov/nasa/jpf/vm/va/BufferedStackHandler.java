@@ -115,6 +115,8 @@ public class BufferedStackHandler extends StackHandler implements Cloneable, ISt
 	 */
 
 	public void debufferAll() {
+		//System.out.println("debufferAll()");
+		//System.out.println(bufferCTX);
 		final FeatureExpr ctx = bufferCTX;
 		bufferCTX = FeatureExprFactory.False();
 		while (!buffer.isEmpty()) {

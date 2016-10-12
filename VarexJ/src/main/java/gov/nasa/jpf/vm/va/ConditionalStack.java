@@ -70,17 +70,7 @@ public class ConditionalStack implements IVStack {
 			}
 		}).simplify();
 	}
-	@Override
-	@SuppressWarnings("unchecked")
-	public void pushEntry(final FeatureExpr ctx, final Conditional<Entry> value) {
-		value.mapf(ctx, new VoidBiFunction<FeatureExpr, Entry>() {
-			@Override
-			public void apply(final FeatureExpr ctx, final Entry entry) {
-				push(ctx, entry.value, entry.isRef);
-			}
-		});
-	}
-
+    
 
 	@Override
 	@SuppressWarnings("unchecked")
@@ -245,11 +235,6 @@ public class ConditionalStack implements IVStack {
 		}).simplify();
 	}
 	
-	@Override
-	public <T> void remove(FeatureExpr ctx) {
-		// TODO Auto-generated method stub
-
-	}
 
 	@Override
 	public boolean isRef(final FeatureExpr ctx, final int offset) {// change to Conditional<Boolean>
@@ -400,7 +385,10 @@ public class ConditionalStack implements IVStack {
 	
 	@Override
 	public ConditionalStack clone() {
-		return new ConditionalStack(stack.map(CopyStack));
+		ConditionalStack clone = new ConditionalStack(); 
+		clone.stack = stack.map(CopyStack);
+		clone.stackCTX = this.stackCTX;
+		return clone;
 	}
 	private static final Function<Stack, Stack> CopyStack = new Function<Stack, Stack>() {
 		@Override
@@ -479,5 +467,17 @@ public class ConditionalStack implements IVStack {
 		if(!(o instanceof ConditionalStack)) return false;
 		return stack.equals(((ConditionalStack)o).stack);
 	}
+
+  @Override
+  @SuppressWarnings("unchecked")
+  public void pushEntry(final FeatureExpr ctx, final Conditional<Entry> value) {
+    value.mapf(ctx, new VoidBiFunction<FeatureExpr, Entry>() {
+      @Override
+      public void apply(final FeatureExpr ctx, final Entry entry) {
+        push(ctx, entry.value, entry.isRef);
+      }
+    });
+  }
+
 	
 }

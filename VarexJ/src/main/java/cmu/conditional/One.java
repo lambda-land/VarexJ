@@ -23,6 +23,10 @@ public class One<T> extends Conditional<T> implements Cloneable {
 	public static final One<Boolean> TRUE = new One<>(Boolean.TRUE);
 	public static final One<Integer> MJIEnvNULL = new One<>(MJIEnv.NULL);
 	
+	public static final One<Integer> ONE = new One<>(1);
+	public static final One<Integer> ZERO = new One<>(0);
+	public static final One<Integer> NEG_ONE = new One<>(-1);
+	
 	private T value;
 
 	public One(T value) {
@@ -202,7 +206,7 @@ public class One<T> extends Conditional<T> implements Cloneable {
 	@Override
     public FeatureExpr getFeatureExpr(T t) {
 		if(value == t) return FeatureExprFactory.True();
-		if(value != null && value.equals(t)) return FeatureExprFactory.True();
+		if(value != null && t != null && value.equals(t)) return FeatureExprFactory.True();
 		return FeatureExprFactory.False();
 	}
     
@@ -211,5 +215,12 @@ public class One<T> extends Conditional<T> implements Cloneable {
     	return new Conditional[]{this, this};
     }
 	
-	
+	@Override
+    public <U,Y> Conditional<U> fastApply(final Conditional<Y> rhs, final BiFunction<T, Y, Conditional<U>> f) {
+		return rhs.mapfr(FeatureExprFactory.True(), new BiFunction<FeatureExpr, Y, Conditional<U>>() {
+			public Conditional<U> apply(final FeatureExpr cc, final Y y) {
+				return f.apply(value, y);
+			}
+		});
+    }
 }

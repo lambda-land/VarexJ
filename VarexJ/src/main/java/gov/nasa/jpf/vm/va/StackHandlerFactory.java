@@ -41,8 +41,8 @@ public class StackHandlerFactory {
 		}
 	}
 	
-	//static Factory f = new DefaultStackHandlerFactory();
-	static Factory f = new HybridStackHandlerFactory();
+	static Factory f = new DefaultStackHandlerFactory();
+	//static Factory f = new HybridStackHandlerFactory();
 	//static Factory f = new VStackHandlerFactory();
 
 	public static Factory getCurrent() {
@@ -56,9 +56,9 @@ public class StackHandlerFactory {
 	public static IStackHandler createStack(FeatureExpr ctx, int nLocals, int nOperands, StackFrame frame) {
 		//return f.createStack(ctx, nLocals, nOperands);
 		//return new VStackHandler(ctx, nLocals, nOperands);
-		return new StackHandler(ctx, nLocals, nOperands);
 		//return new HybridStackHandler(ctx, nLocals, nOperands);
-		//return new MeasuringStackHandler(ctx, nLocals, nOperands, frame);
+		//return new StackHandler(ctx, nLocals, nOperands);
+		return new MeasuringStackHandler(ctx, nLocals, nOperands);
 	}
 	
 	public static IStackHandler createStack2(FeatureExpr ctx, int nLocals, int nOperands) {

@@ -9,7 +9,7 @@ public class StackFactory {
   public enum VSFactory {
     CStack, VStack
   }
-  static VFactory f = new VStackFactory();
+  static VFactory f = new CStackFactory();
 
   public static List<Object> asParameter() {
 		List<Object> factorys = new ArrayList<>();
