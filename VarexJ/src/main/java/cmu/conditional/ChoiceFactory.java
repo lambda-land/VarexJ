@@ -47,7 +47,7 @@ public class ChoiceFactory {
 	public static void activateTreeChoice() {
 		f = new TreeChoiceFactory();
 	}
-	
+
 	public static List<Object[]> asParameter() {
 		List<Object[]> factorys = new ArrayList<>();
 		for (Factory f : Factory.values()) {
@@ -65,8 +65,8 @@ class TreeChoiceFactory implements IChoiceFactory {
 
 	@Override
 	public <T> Conditional<T> create(final FeatureExpr featureExpr, final Conditional<T> thenBranch, final Conditional<T> elseBranch) {
-		//return new TreeChoice<>(featureExpr, thenBranch, elseBranch);
-		return TreeChoice.createInstance(featureExpr, thenBranch, elseBranch);
+		return new TreeChoice<>(featureExpr, thenBranch, elseBranch);
+		//return TreeChoice.createInstance(featureExpr, thenBranch, elseBranch);
 	}
 	
 	@Override

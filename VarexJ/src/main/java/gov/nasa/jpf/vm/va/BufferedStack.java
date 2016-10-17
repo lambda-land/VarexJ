@@ -385,11 +385,7 @@ public class BufferedStack implements IVStack {
 
 	
 
-	@Override
-	public <T> void remove(FeatureExpr ctx) {
-		// TODO Auto-generated method stub
 
-	}
 
 	@Override
 	public boolean isRef(FeatureExpr ctx, int offset) {

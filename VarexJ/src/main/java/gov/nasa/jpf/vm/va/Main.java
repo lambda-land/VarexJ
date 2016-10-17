@@ -16,7 +16,7 @@ FeatureExpr a = FeatureExprFactory.createDefinedExternal("f" + Main.FeatureID++)
 
 public class Main {
   public static int FeatureID = 0;
-  public static boolean flag = true;
+  public static boolean flag = false;
   
   public static NonStaticFeature[] getOptions(int nrOptions) {
       NonStaticFeature[] options = new NonStaticFeature[nrOptions];
@@ -111,16 +111,21 @@ public class Main {
           if (operations[i].equals("push")) {
               stack.push(fes[i], conditionalValues[i], false);
           } else {
-              //stack.pop(fes[i], 1);
-               Conditional<Integer> res = stack.pop(fes[i], Type.INT );
-               //System.out.println("pop " + fes[i] + " " + res.simplify(fes[i]));
+            stack.pop(fes[i], 1);
+           //   System.out.println("width " + stack.getStackWidth());
+              // Conditional<Integer> res = stack.pop(fes[i], Type.INT );
+              // System.out.println("pop " + i + " " + fes[i] + " " + res.simplify(fes[i]));
           }
           //System.out.println("" + stack);
       }
       long end = System.nanoTime();
       long duration = (end - start);
-  
+      //if(stack instanceof VStack ) System.out.println(" Vstack ");
+      //else System.out.println(" CStack ");
+     // System.out.println("width" + stack.getStackWidth());
+      
       return duration;
+      
   }
   
   /*
@@ -231,8 +236,7 @@ public class Main {
       FeatureExpr[] fes = new FeatureExpr[operationsNum];
       String[] operations = new String[operationsNum];
       Conditional<Integer>[] conditionalValues = new Conditional[operationsNum];
-      Conditional<Integer>[] cOutput = new Conditional[operationsNum];
-      Conditional<Integer>[] vOutput = new Conditional[operationsNum];
+     
       long[] ans = new long[3];
   
       int pushNum = GenOp(operationsNum, operations);
@@ -309,10 +313,11 @@ public class Main {
       
       if (flag) {
         for (int i = 0; i < operationsNum; i++) {
-            System.out.println( operations[i] + " " + fes[i] + " " + nextFe.get(i));
+            System.out.println( operations[i] + " " + fes[i] + " " + nextFe.get(i) + " " + conditionalValues[i]);
         }
           
       }
+
       System.out.println("bpeek");
       ans[0] = testStackWith(bstack, operationsNum, fes, operations, conditionalValues);
       ans[0] = Math.min(ans[0], testStackWith(bstack3, operationsNum, fes, operations, conditionalValues));
@@ -322,6 +327,7 @@ public class Main {
       bstack2 = null;
       bstack3 = null;
   
+      //activateTreeVStack();
       System.out.println("vpeek");
       ans[1] = testStackWith(vstack, operationsNum, fes, operations, conditionalValues);
       ans[1] = Math.min(ans[1], testStackWith(vstack3, operationsNum, fes, operations, conditionalValues));
@@ -330,25 +336,41 @@ public class Main {
       vstack2 = null;
       vstack3 = null;
       
+      conditionalValues = null;
+      operations = null;
+      fes = null;
     
       return ans;
   
   }
+  public static void testPop() {
+      FeatureExpr a = FeatureExprFactory.createDefinedExternal("a");
+      FeatureExpr b = FeatureExprFactory.createDefinedExternal("b");
+      Conditional<Integer> v = ChoiceFactory.create(a,  ChoiceFactory.create(b, new One<>(1), new One<>(2)), ChoiceFactory.create(b, new One<>(3), new One<>(4)));
+      IVStack test = new VStack(5);
+      test.push(FeatureExprFactory.True(), new One<>(5), false);
+      test.push(FeatureExprFactory.True(), v, false);
+      System.out.println(test.pop(b, Type.INT));
+      System.out.println("done");
+      System.out.println(test.pop(b, Type.INT));
+      
+  }
   
   public static void main(String[] args) {
       System.setProperty("FEATUREEXPR", "BDD");
-      int n = 20, m = 2, nums = 3;
+      int n = 20, m = 2, nums = 200;
       NonStaticFeature[] options = getOptions(15);
-     
-   
+      
+    
+  
       int stackSize = 200;
       int randomFEComlexity = 1;
-      double ratio = 0;
+      double ratio = 0.1;
       int conditionalSize = 1;
-      int operationsNum = 100;
+      int operationsNum = 200;
       double possibility = 0.9;
    //0.85
-      ChoiceFactory.activateTreeChoice();
+      //ChoiceFactory.activateTreeChoice();
   
       double[][] res = new double[n + 1][m + 1];
       long[] ans = new long[2];
@@ -366,7 +388,7 @@ public class Main {
               System.out.print("No."+ i + "nums " + j + " ");
               
               //test1
-              options = getOptions(2+i);
+              options = getOptions(i+2);
               //ans = testBufferedStack(200, options, randomFEComlexity, ratio, conditionalSize, operationsNum/2, 0);
               
               //test 2
@@ -374,7 +396,7 @@ public class Main {
               //ans = testBufferedStack(200, options, randomFEComlexity, ratio, i+1, operationsNum/2, 0);
               
               
-              ans = testBufferedStack(200, options, randomFEComlexity, ratio, conditionalSize, operationsNum, possibility);
+              ans = testBufferedStack(stackSize, options, randomFEComlexity, ratio, conditionalSize, operationsNum, possibility);
               if (flag) System.out.println(ans[0] + " " + ans[1]);
               bsum += ans[0] / 1000;
               vsum += ans[1] / 1000;
@@ -384,25 +406,12 @@ public class Main {
           res[i][1] = vsum / nums;
           System.out.println(" ");
           System.out.println(res[i][0] + ";" + res[i][1] + "; ");
-          System.out.println(200 + " " + options.length + " "+ randomFEComlexity+ " " + ratio + " " + conditionalSize +" " + operationsNum + " "+ possibility);
+          System.out.println(stackSize + " " + options.length + " "+ randomFEComlexity+ " " + ratio + " " + conditionalSize +" " + operationsNum + " "+ possibility);
       }
       System.out.println("bsum; vsum");
       for (int i = 0; i < n; i++) {
           System.out.println(res[i][0] + ";" + res[i][1]);
       }
-      
-      /*
-      Conditional<Integer> a = ChoiceFactory.create(options[0].a, new One<>(1), new One<>(2));
-      Conditional<Integer> b = null;
-      b = a.mapfr(options[0].a, new BiFunction<FeatureExpr, Integer, Conditional<Integer>>() {
-  
-      @Override
-      public Conditional<Integer> apply(final FeatureExpr f, final Integer value) {
-          return ChoiceFactory.create(f, new One<>(value), (Conditional<Integer>) One.NULL);
-      }
-      }); 
-         System.out.println(a);
-      System.out.println(b);*/
   }
   
 }

@@ -3,7 +3,7 @@ package gov.nasa.jpf.vm.va;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import com.sun.xml.internal.ws.org.objectweb.asm.Type;
+import gov.nasa.jpf.vm.va.IStackHandler.Type;
 
 import cmu.conditional.ChoiceFactory;
 import cmu.conditional.Conditional;
@@ -35,12 +35,16 @@ public class Test {
 	    IVStack vstack = new VStack(10);
 	    FeatureExpr a = FeatureExprFactory.createDefinedExternal("a");
 	    FeatureExpr b = FeatureExprFactory.createDefinedExternal("b");
-	    Conditional<Integer> value = ChoiceFactory.create(a, new One<>(3), new One<>(2));
+	    FeatureExpr c = FeatureExprFactory.createDefinedExternal("c");
+	    Conditional<Integer> v1 = ChoiceFactory.create(c, new One<>(3), new One<>(4));
+	    Conditional<Integer> v2 = ChoiceFactory.create(a, new One<>(1), new One<>(2));
 	   // vstack.push(b, new One<>(2), false);
-	    vstack.push(FeatureExprFactory.True(), value, false);
+	    vstack.push(FeatureExprFactory.True(), v1, false);
+	    vstack.push(b.not(), v2, false);
 
 	    System.out.println(vstack);
-	    vstack.pop(b, Type.INT);
+	    Conditional<Integer> res = vstack.pop(b, Type.INT);
+	    System.out.println("res " + res);
 	    System.out.println(vstack);
 	}
 }

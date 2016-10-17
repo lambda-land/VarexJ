@@ -829,7 +829,7 @@ public Conditional<Entry> pop(final FeatureExpr ctx) {
 private Conditional<Integer> popInteger(final FeatureExpr ctx) {
 
     Conditional<Entry> ret = popEntryFastHelper(ctx, size);
-    // System.out.println(ret);
+    //System.out.println("ret " + ret);
     return ret.map(new Function<Entry, Integer>() {
     public Integer apply(Entry e) {
         return e.value;
@@ -847,9 +847,21 @@ private Conditional<Float> popFloat(final FeatureExpr ctx) {
     return ret;
 }
 
+private Conditional<Entry> popHelper(FeatureExpr ctx, int count) {
+    if(count == -1) return (Conditional<Entry>)One.NULL;
+    Conditional<Entry> ret;
+    Conditional<Entry>[] tmp = slots[count].split(ctx);
+    slots[count] = tmp[1];
+    FeatureExpr hole = tmp[0].getFeatureExpr(null);
+    if(hole.isContradiction()) {
+        return tmp[0];
+    }
+    return ChoiceFactory.create(hole.not(), tmp[0].simplify(hole.not()), popHelper(hole, count - 1));
+}
+
 private Conditional<Entry> popEntryFastHelper(FeatureExpr ctx, int count) {
-    // System.out.println("popEntryFastHelper " + ctx + " " + (size - count));
-    // printStack();
+    //System.out.println("popEntryFastHelper " + ctx + " " + (size - count));
+    //printStack();
     // System.out.println("popfast");
 
     if (count == -1)
@@ -868,16 +880,16 @@ private Conditional<Entry> popEntryFastHelper(FeatureExpr ctx, int count) {
     int i;
     for (i = count; i >= 0; --i) {
         tmp[i] = slots[i].split(fs[i + 1]);
-        // System.out.println("" + slots[i] + " " + fs[i+1] + " tmp " +
-        // tmp[i][0] + " " + tmp[i][1]);
-        // System.out.println("tmp " + tmp[i][0] + " " +
-        // tmp[i][0].getFeatureExpr(null));
+         System.out.println( tmp[i][0].getFeatureExpr(null));
+//         System.out.println("" + slots[i] + " " + fs[i + 1] + " tmp " +
+//         tmp[i][0] + " " + tmp[i][1]);
+//              System.out.println("tmp " + tmp[i][0] + " " + tmp[i][0].getFeatureExpr(null));
         and = tmp[i][0].getFeatureExpr(null).and(fs[i + 1]);
         if (!fs[i + 1].equivalentTo(and)) {
             if (fs[i + 1].isTautology()) {
                 slots[i] = (Conditional<Entry>) One.NULL;
-            //} else if (fs[i + 1].isContradiction()) {
-            //    slots[i] = tmp[i][1].simplify();
+            } else if (fs[i + 1].isContradiction()) {
+                slots[i] = tmp[i][1].simplify();
             } else {
                 slots[i] = ChoiceFactory.create(fs[i + 1].not(), tmp[i][1], (Conditional<Entry>) One.NULL).simplify();
             }
@@ -885,6 +897,7 @@ private Conditional<Entry> popEntryFastHelper(FeatureExpr ctx, int count) {
         fs[i] = and;
         if (and.isContradiction())
             break;
+        System.out.println("fs is " + i + " " + fs[i]);
     }
     /*
      * if(i == -1 && !(and.isContradiction())) { throw new
@@ -894,13 +907,17 @@ private Conditional<Entry> popEntryFastHelper(FeatureExpr ctx, int count) {
     if (i == -1)
         i = 0;
     ret = tmp[i][0];
+    
+
     for (int j = i + 1; j <= count; ++j) {
-        if(!tmp[j][0].equals(One.NULL)) 
-            ret = ChoiceFactory.create(fs[j], ret, tmp[j][0]);
+        //System.out.println(fs[j] + " " + ret + " " + tmp[j][0]);
+        if (!tmp[j][0].equals(One.NULL))
+            ret = ChoiceFactory.create(fs[j], ret, tmp[j][0].simplify(fs[j].not()));
+            //ret = ChoiceFactory.create(fs[j], ret, tmp[j][0]);
     }
     // System.out.println("popEntryFastHelper result " + ret.simplify(ctx));
     // printStack();
-
+    //System.out.println("ret " + ctx + " " + ret);
     return ret.simplify(ctx);
 }
 

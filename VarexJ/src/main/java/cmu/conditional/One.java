@@ -223,4 +223,9 @@ public class One<T> extends Conditional<T> implements Cloneable {
 			}
 		});
     }
+	
+	@Override
+	public int depth() {
+	    return 1;
+	}
 }

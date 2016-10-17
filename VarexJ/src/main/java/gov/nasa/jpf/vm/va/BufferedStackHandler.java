@@ -121,6 +121,8 @@ public class BufferedStackHandler extends StackHandler implements Cloneable, ISt
 		bufferCTX = FeatureExprFactory.False();
 		while (!buffer.isEmpty()) {
 			final Tuple value = buffer.removeLast();
+			superPush(ctx, value.value, value.isRef);
+			/*
 			value.value.mapf(ctx, new VoidBiFunction<FeatureExpr, Object>() {
 
 				@Override
@@ -129,6 +131,7 @@ public class BufferedStackHandler extends StackHandler implements Cloneable, ISt
 				}
 
 			});
+			*/
 		}
 		bufferCTX = FeatureExprFactory.True();
 	}
@@ -709,6 +712,8 @@ public class BufferedStackHandler extends StackHandler implements Cloneable, ISt
 				isRef = v.isRef;
 			} else if (isRef != v.isRef) {
 				debufferAll();
+				super.pushLocal(ctx, index);
+				/*
 				value.mapf(ctx, new BiFunction<FeatureExpr, Entry, Conditional<Object>>() {
 
 					@Override
@@ -717,6 +722,7 @@ public class BufferedStackHandler extends StackHandler implements Cloneable, ISt
 						return null;
 					}
 				});
+				*/
 				return;
 			}
 		}

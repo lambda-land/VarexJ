@@ -140,12 +140,20 @@ public abstract class Conditional<T> {
     	return false;
     }
     
-    public FeatureExpr getFeatureExpr(T t) {
-    	throw new UnsupportedOperationException();
+    public FeatureExpr getFeatureExpr(final T t) {
+        Conditional<Boolean> c = mapfr(FeatureExprFactory.True(), new BiFunction<FeatureExpr, T, Conditional<Boolean>>() {
+            public Conditional<Boolean> apply(final FeatureExpr cc, final T x) {
+                if(x == t) return One.TRUE;
+                else return One.FALSE;
+            }
+        });
+        FeatureExpr ret = c.toMap().get(true);
+        if(ret == null) return FeatureExprFactory.False();
+        return ret;
     }
     
     public Conditional<T>[] split(FeatureExpr ctx) {
-    	throw new UnsupportedOperationException();
+    	return new Conditional[]{simplify(ctx), simplify(ctx.not())};
     }
     
     public <U,Y> Conditional<U> fastApply(final Conditional<Y> rhs, final BiFunction<T, Y, Conditional<U>> f) {
@@ -193,5 +201,9 @@ public abstract class Conditional<T> {
                 return f.apply(x);
             }
         });
+    }
+    
+    public int depth() {
+        throw new UnsupportedOperationException();
     }
 }
