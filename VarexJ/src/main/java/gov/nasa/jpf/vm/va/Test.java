@@ -41,7 +41,7 @@ public class Test {
 	   // vstack.push(b, new One<>(2), false);
 	    vstack.push(FeatureExprFactory.True(), v1, false);
 	    vstack.push(b.not(), v2, false);
-
+	
 	    System.out.println(vstack);
 	    Conditional<Integer> res = vstack.pop(b, Type.INT);
 	    System.out.println("res " + res);
