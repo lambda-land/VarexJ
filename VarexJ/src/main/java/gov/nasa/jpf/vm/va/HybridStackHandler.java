@@ -30,12 +30,12 @@ public class HybridStackHandler implements Cloneable, IStackHandler {
 		OneStack, JPFStack;
 	}
 	
-	public static LiftedStack liftedStack = LiftedStack.Default;
+	public LiftedStack liftedStack = LiftedStack.Default;
 	public enum LiftedStack {
 		Default, Buffered
 	}
 	
-	private static IStackHandler createNomalStack(FeatureExpr ctx, int nLocals, int nOperands) {
+	private IStackHandler createNomalStack(FeatureExpr ctx, int nLocals, int nOperands) {
 		switch (normalStack) {
 		case JPFStack:
 			return new JPFStackHandler(ctx, nLocals, nOperands);
@@ -46,7 +46,7 @@ public class HybridStackHandler implements Cloneable, IStackHandler {
 		}
 	}
 	
-	private static IStackHandler createLiftedStack(FeatureExpr ctx, int nLocals, int nOperands) {
+	private IStackHandler createLiftedStack(FeatureExpr ctx, int nLocals, int nOperands) {
 		switch (liftedStack) {
 		case Buffered:
 			return new BufferedStackHandler(ctx, nLocals, nOperands);

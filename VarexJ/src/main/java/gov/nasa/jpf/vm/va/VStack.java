@@ -134,7 +134,33 @@ class VStack implements IVStack {
     /*
      * ref
      */
+    Boolean tmp = false;
 
+    public boolean hasAnyRef(FeatureExpr ctx) {
+        Conditional<Boolean> res = new One<>(false);
+        for (int i = 0; i <= this.size; i++) {
+            final int j = i;
+            res = res.mapfr(ctx, new BiFunction<FeatureExpr, Boolean, Conditional<Boolean>>() {
+            public Conditional<Boolean> apply(FeatureExpr c, final Boolean x) {
+                if (x == true) {
+                    return new One<>(true);
+                }
+                return slots[j].mapfr(c, new BiFunction<FeatureExpr, Entry, Conditional<Boolean>>() {
+                public Conditional<Boolean> apply(FeatureExpr c, Entry y) {
+                    if (Conditional.isContradiction(c) || y == null) {
+                        return new One<>(false);
+                    } else {
+                        return new One<>(y.isRef);
+                    }
+                }
+                }).simplify();
+            }
+            }).simplify();
+        }
+        return res.simplify(ctx).getValue();
+        // return res.getValue();
+    }
+/*
     private boolean res;
     @Override
     public boolean hasAnyRef(FeatureExpr ctx) {
@@ -153,7 +179,7 @@ class VStack implements IVStack {
         }
         return false;
     }
-    
+  */  
     @Override
     public boolean isRef(FeatureExpr ctx, int offset) {
         return peek(ctx, offset).map(new Function<Entry, Boolean>() {
@@ -394,6 +420,26 @@ class VStack implements IVStack {
      */
     private void popHelper(FeatureExpr ctx) {
         Conditional<Entry>[] tmp;
+        for(int i = size; i >= 0; i--) {
+            tmp = slots[i].split(ctx);
+            FeatureExpr and = tmp[0].getFeatureExpr(null).and(ctx);
+            if(!ctx.equivalentTo(and)) {
+               if(ctx.isTautology()) {
+                    slots[i] = (Conditional<Entry>) One.NULL; 
+                } else if(ctx.isContradiction()) {
+                    slots[i] = tmp[1].simplify();
+                } else {
+                    slots[i] = ChoiceFactory.create(ctx.not(), tmp[1], (Conditional<Entry>)One.NULL).simplify();
+                } 
+                ctx = and;
+            }
+          
+            if(ctx.isContradiction()) break;
+        }
+    }
+    /*
+    private void popHelper(FeatureExpr ctx) {
+        Conditional<Entry>[] tmp;
         for (int i = size; i >= 0; --i) {
             // System.out.println("before split " + ctx + " " + slots[i]);
             tmp = slots[i].split(ctx);
@@ -407,7 +453,7 @@ class VStack implements IVStack {
                 break;
         }
     }
-    
+    */
     @Override
     public void pop(FeatureExpr ctx, int n) {
         simpleCleanup();
@@ -498,6 +544,7 @@ class VStack implements IVStack {
         simpleCleanup();
         Conditional<Entry> res = popEntryHelper(ctx, size);
         if(copyRef) return res;
+        
         else return res.map(new Function<Entry, Entry>() {
             public Entry apply(Entry e) {
                 e.isRef = false;

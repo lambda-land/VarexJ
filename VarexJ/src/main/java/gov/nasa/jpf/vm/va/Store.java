@@ -132,7 +132,7 @@ public class Store {
 					long end = System.nanoTime();
 					long duration = (end - start);
 					if(start == 0) duration  = 0;
-					measurement.measurement[factory.ordinal() + 3] = duration;
+					measurement.measurement[factory.ordinal() + 4] = duration;
 					
 				}
 
@@ -152,17 +152,19 @@ public class Store {
 				writer.println(measurement.toString());
 			}
 		    int num = 0;
-	        long dsum = 0, bsum = 0, hsum = 0, vdsum = 0,vbsum = 0, vhsum = 0;
+	        long dsum = 0, bsum = 0, hsum = 0, vdsum = 0,vbsum = 0, vhsum = 0, hbsum = 0, vhbsum = 0;
 	        for (Measurement measurement : measures) {
 	            dsum += measurement.measurement[0];
 	            bsum += measurement.measurement[1];
 	            hsum += measurement.measurement[2];
-	            vdsum += measurement.measurement[3];
-	            vbsum += measurement.measurement[4];
-	            vhsum += measurement.measurement[5];
-	           
+	            hbsum += measurement.measurement[3];
+	            
+	            vdsum += measurement.measurement[4];
+	            vbsum += measurement.measurement[5];
+	            vhsum += measurement.measurement[6];
+	            vhbsum += measurement.measurement[7];
 	        }
-	        writer.println( dsum + " "+ bsum + " "+ hsum  + " "+ vdsum + " " + vbsum + " " + vhsum);
+	        writer.println( dsum + " "+ bsum + " "+ hsum + " "+ hbsum + " "+ vdsum + " " + vbsum + " " + vhsum + " "+ vhbsum);
 		} catch (FileNotFoundException | UnsupportedEncodingException e1) {
 			e1.printStackTrace();
 		}
@@ -186,7 +188,7 @@ public class Store {
 
 		String methodName;
 
-		long[] measurement = new long[6];
+		long[] measurement = new long[8];
 
 		public Measurement(String methodName) {
 			this.methodName = methodName;

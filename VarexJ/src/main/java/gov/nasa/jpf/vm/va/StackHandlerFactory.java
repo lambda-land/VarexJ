@@ -9,7 +9,7 @@ import gov.nasa.jpf.vm.StackFrame;
 public class StackHandlerFactory {
 
 	public enum SHFactory {
-		Default, Hybid, Buffered //, VStack 
+		Default, Hybid, Buffered, HybridBuffered //, VStack 
 	}
 	
 	public static List<Object> asParameter() {
@@ -31,6 +31,9 @@ public class StackHandlerFactory {
 		case Hybid:
 			activateHybridStackHandler();
 			break;
+		case HybridBuffered:
+            activateHybridBufferedStackHandler();
+            break;
 		/*
 		case VStack:
 			activateVStackHandler();
@@ -41,8 +44,9 @@ public class StackHandlerFactory {
 		}
 	}
 	
-	static Factory f = new DefaultStackHandlerFactory();
+	//static Factory f = new DefaultStackHandlerFactory();
 	//static Factory f = new HybridStackHandlerFactory();
+	static Factory f = new HybridStackHandlerBufferdFactory();
 	//static Factory f = new VStackHandlerFactory();
 
 	public static Factory getCurrent() {
@@ -84,6 +88,9 @@ public class StackHandlerFactory {
 	public static void activateHybridStackHandler() {
 		f = new HybridStackHandlerFactory();
 	}
+	public static void activateHybridBufferedStackHandler() {
+        f = new HybridStackHandlerBufferdFactory();
+    }
 	/*
 	public static void activateVStackHandler() {
 		f = new VStackHandlerFactory();
@@ -164,21 +171,43 @@ class BufferedStackHandlerFactory implements Factory {
 }
 
 class HybridStackHandlerFactory implements Factory {
-	@Override
-	public IStackHandler createStack(FeatureExpr ctx, int nLocals, int nOperands) {
-		return new HybridStackHandler(ctx, nLocals, nOperands);
-	}
+    @Override
+    public IStackHandler createStack(FeatureExpr ctx, int nLocals, int nOperands) {
+        HybridStackHandler res = new HybridStackHandler(ctx, nLocals, nOperands);
+        res.liftedStack = HybridStackHandler.LiftedStack.Default;
+        return res;
+    }
 
-	@Override
-	public IStackHandler createStack() {
-		return new HybridStackHandler();
-	}
+    @Override
+    public IStackHandler createStack() {
+        return new HybridStackHandler();
+    }
 
-	@Override
-	public String toString() {
-		return getClass().getSimpleName() + "(" +HybridStackHandler.normalStack + " -> " + HybridStackHandler.liftedStack + ")";
-	}
+    @Override
+    public String toString() {
+        return getClass().getSimpleName();// + "(" +HybridStackHandler.normalStack + " -> " + HybridStackHandler.liftedStack + ")";
+    }
 }
+
+class HybridStackHandlerBufferdFactory implements Factory {
+    @Override
+    public IStackHandler createStack(FeatureExpr ctx, int nLocals, int nOperands) {
+        HybridStackHandler res = new HybridStackHandler(ctx, nLocals, nOperands);
+        res.liftedStack = HybridStackHandler.LiftedStack.Buffered;
+        return res;
+    }
+
+    @Override
+    public IStackHandler createStack() {
+        return new HybridStackHandler();
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName();// + "(" +HybridStackHandler.normalStack + " -> " + HybridStackHandler.liftedStack + ")";
+    }
+}
+
 	/*
 class VStackHandlerFactory implements Factory {
 	@Override

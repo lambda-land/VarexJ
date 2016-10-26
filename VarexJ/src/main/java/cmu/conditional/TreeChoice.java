@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import de.fosd.typechef.featureexpr.FeatureExpr;
+import de.fosd.typechef.featureexpr.FeatureExprFactory;
 
 /**
  * Choice implementation as tree. 
@@ -216,5 +217,117 @@ class TreeChoice<T> extends IChoice<T> implements Cloneable {
     public int depth() {
         return depth;
     }
+    
+    public static <T> Conditional<T> createInstance(FeatureExpr featureExpr, Conditional<T> thenBranch, Conditional<T> elseBranch) {
+        if(featureExpr.isTautology()) return thenBranch;
+        if(featureExpr.isContradiction()) return elseBranch;
+        if(thenBranch instanceof TreeChoice) {
+            if(featureExpr.equivalentTo(((TreeChoice) thenBranch).featureExpr)) {
+                thenBranch = ((TreeChoice) thenBranch).thenBranch;
+            }
+        }
+        if(elseBranch instanceof TreeChoice) {
+            if(featureExpr.equivalentTo(((TreeChoice) elseBranch).featureExpr)) {
+                elseBranch = ((TreeChoice) elseBranch).elseBranch;
+            }
+        }
+        
+        if(thenBranch instanceof One && elseBranch instanceof One) {
+            if(thenBranch.equals(elseBranch)) {
+                return thenBranch;
+            }
+        }
+        
+        return new TreeChoice(featureExpr, thenBranch, elseBranch);
+    }
+    
+    @Override
+    public Conditional<T>[] split(FeatureExpr ctx) {
+        //System.out.println("split");
+        Conditional<T>[] ret = new Conditional[2];
+        Conditional<T>[] thenRet, elseRet;
 
+        FeatureExpr and = ctx.and(featureExpr);
+        FeatureExpr andNot = ctx.andNot(featureExpr);
+
+        if (isContradiction(and)) {
+            elseRet = elseBranch.split(andNot);
+            ret[0] = elseRet[0];
+            ret[1] = createInstance(featureExpr, thenBranch, elseRet[1]);
+            return ret;
+        }
+
+        if (isContradiction(andNot)) {
+            thenRet = thenBranch.split(and);
+            ret[0] = thenRet[0];
+            ret[1] = createInstance(featureExpr, thenRet[1], elseBranch);
+            return ret;
+        }
+
+        thenRet = thenBranch.split(and);
+        elseRet = elseBranch.split(andNot);
+
+        if (thenRet[0].equals(elseRet[0])) {
+            ret[0] = thenRet[0];
+        } else {
+            ret[0] = createInstance(featureExpr, thenRet[0], elseRet[0]);
+        }
+
+        if (thenRet[1].equals(elseRet[1])) {
+            ret[1] = thenRet[1];
+        } else {
+            ret[1] = createInstance(featureExpr, thenRet[1], elseRet[1]);
+        }
+
+        return ret;
+
+    }
+    @Override
+    public <U, Y> Conditional<U> fastApply(final Conditional<Y> rhs, final BiFunction<T, Y, Conditional<U>> f) {
+        if (rhs instanceof One) {
+            return super.fastApply(rhs, f);
+        }
+
+        if (!(rhs instanceof TreeChoice)) {
+            return super.fastApply(rhs, f);
+        }
+
+        Conditional<Y>[] rhss = rhs.split(featureExpr);
+
+        rhss[0].simplify();
+        rhss[1].simplify();
+
+        return createInstance(featureExpr, thenBranch.fastApply(rhss[0], f), elseBranch.fastApply(rhss[1], f)).simplify();
+    }
+    @Override
+    public Conditional<T> fastUpdate(final Function<T, Conditional<T>> f) {
+        thenBranch = thenBranch.fastUpdate(f);
+        elseBranch = elseBranch.fastUpdate(f);
+        return this;
+    }
+
+    @Override
+    protected Conditional<T> fastUpdate(FeatureExpr path, FeatureExpr ctx, final Function<T, Conditional<T>> f) {
+        if (isContradiction(ctx.and(path))) {
+        } else if (isTautology(ctx.orNot(path))) {
+            fastUpdate(f);
+        } else {
+            FeatureExpr pT = path.and(featureExpr);
+            FeatureExpr pF = path.andNot(featureExpr);
+            thenBranch.fastUpdate(pT, ctx, f);
+            elseBranch.fastUpdate(pF, ctx, f);
+        }
+
+        if (thenBranch.equals(elseBranch)) {
+            return thenBranch;
+        }
+
+        return this;
+
+    }
+
+    @Override
+    public Conditional<T> fastUpdate(FeatureExpr ctx, final Function<T, Conditional<T>> f) {
+        return fastUpdate(FeatureExprFactory.True(), ctx, f);
+    }
 }

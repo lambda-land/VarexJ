@@ -344,7 +344,7 @@ public class JPF implements Runnable {
 						HybridStackHandler.normalStack = NormalStack.JPFStack;
 					}
 					if (split[2].equals("Buffered")) {
-						HybridStackHandler.liftedStack = LiftedStack.Buffered;
+						//HybridStackHandler.liftedStack = LiftedStack.Buffered;
 					}
 				}
 			} else if (stackHandlerFactory.equals(StackHandler.class.getSimpleName())) {
