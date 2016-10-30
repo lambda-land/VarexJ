@@ -45,8 +45,8 @@ public class StackHandlerFactory {
 	}
 	
 	//static Factory f = new DefaultStackHandlerFactory();
-	//static Factory f = new HybridStackHandlerFactory();
-	static Factory f = new HybridStackHandlerBufferdFactory();
+	static Factory f = new HybridStackHandlerFactory();
+	//static Factory f = new HybridStackHandlerBufferdFactory();
 	//static Factory f = new VStackHandlerFactory();
 
 	public static Factory getCurrent() {

@@ -11,7 +11,11 @@ import de.fosd.typechef.conditional.Choice;
 import de.fosd.typechef.featureexpr.FeatureExpr;
 import de.fosd.typechef.featureexpr.FeatureExprFactory;
 import gov.nasa.jpf.vm.Types;
-
+/**
+ * choice of stack implementation.
+ * @author Meng Meng
+ *
+ */
 class VStack implements IVStack {
     public int size;
     public Conditional<Entry>[] slots;
@@ -294,7 +298,7 @@ class VStack implements IVStack {
      * pushPlainValue
      */
     
-    private void pushPlainValue(FeatureExpr ctx, Integer value, boolean isRef) {
+    private void pushPlainValue(FeatureExpr ctx, int value, boolean isRef) {
         resize();
     
         if (ctx.equivalentTo(stackCTX)) {
@@ -390,7 +394,7 @@ class VStack implements IVStack {
         } else {
             // System.out.println("push integer here");
             if (value instanceof Integer) {
-                pushPlainValue(ctx, (Integer) value, isRef);
+                pushPlainValue(ctx, ((Integer) value).intValue(), isRef);
             } else if (value instanceof Long) {
                 long v = ((Long) value).longValue();
                 pushPlainValue(ctx, (int) (v >> 32), isRef);
@@ -652,15 +656,11 @@ class VStack implements IVStack {
         case DOUBLE:
             final Conditional<Integer> tmp = peekValue(ctx, offset);
             final Conditional<Integer> tmp1 = peekValue(ctx, offset + 1);
-            Conditional<T> res = tmp.mapfr(ctx, new BiFunction<FeatureExpr, Integer, Conditional<T>>() {
-            public Conditional<T> apply(FeatureExpr c, final Integer x) {
-                return tmp1.simplify(c).map(new Function<Integer, T>() {
-                public T apply(Integer y) {
-                    return (T) (Double) Types.intsToDouble(x, y);
+            Conditional<T> res = (Conditional<T>) tmp.fastApply(tmp1, new BiFunction<Integer, Integer, Conditional<Double>>() {
+                public Conditional<Double> apply(Integer x, Integer y) {
+                    return new One<>(Types.intsToDouble(x, y));
                 }
                 }).simplify();
-            }
-            }).simplify();
             return res;
     
         case FLOAT:
@@ -699,8 +699,13 @@ class VStack implements IVStack {
     
     @Override
     public int[] getSlots(FeatureExpr ctx) {
-        // TODO Auto-generated method stub
-        return null;
+        int sz = topSize(ctx, size).getValue();
+        if(sz == -1) return new int[0];
+        int[] clone = new int[sz];
+        for(int i = sz; i >=0; i--) {
+            clone[i] = peekValue(ctx, sz - i).getValue();
+        }
+        return clone;
     }
 
     @Override
@@ -983,4 +988,3 @@ class VStack implements IVStack {
         return map;
     }
 }
-

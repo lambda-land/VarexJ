@@ -316,6 +316,7 @@ class Entry {
 
   @Override
   public boolean equals(Object o) {
+    if(o == null) return false;
     return ((Entry) o).value == value && ((Entry) o).isRef == isRef;
   }
 

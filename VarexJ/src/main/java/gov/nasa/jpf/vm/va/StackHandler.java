@@ -510,6 +510,7 @@ public class StackHandler implements Cloneable, IStackHandler {
     }
     int[] stackSlots = new int[length - locals.length];
     stackSlots = stack.getSlots(ctx);
+    if(stackSlots.length == 0) return slots;
     int j = 0; 
     while(i < length && j < length - locals.length) {
       slots[i++] = stackSlots[j++];
