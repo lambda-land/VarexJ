@@ -102,11 +102,13 @@ public class ThreadInfo extends InfoObject
     protected class StackIterator implements Iterator<StackFrame> {
         StackFrame frame = top;
 
-        public boolean hasNext() {
+        @Override
+		public boolean hasNext() {
             return frame != null;
         }
 
-        public StackFrame next() {
+        @Override
+		public StackFrame next() {
             if (frame != null) {
                 StackFrame ret = frame;
                 frame = frame.getPrevious();
@@ -117,7 +119,8 @@ public class ThreadInfo extends InfoObject
             }
         }
 
-        public void remove() {
+        @Override
+		public void remove() {
             throw new UnsupportedOperationException("can't remove StackFrames");
         }
     }
@@ -127,7 +130,8 @@ public class ThreadInfo extends InfoObject
             frame = getLastInvokedStackFrame();
         }
 
-        public StackFrame next() {
+        @Override
+		public StackFrame next() {
             if (frame != null) {
                 StackFrame ret = frame;
                 frame = null;
@@ -288,7 +292,8 @@ public class ThreadInfo extends InfoObject
             ti.markUnchanged();
         }
 
-        public ThreadInfo restore(ThreadInfo ignored) {
+        @Override
+		public ThreadInfo restore(ThreadInfo ignored) {
             ti.resetVolatiles();
 
             ti.threadData = threadData;
@@ -444,7 +449,7 @@ public class ThreadInfo extends InfoObject
     
     ci = appCtx.getSystemClassLoader().getThreadClassInfo();
     targetRef = MJIEnv.NULL;
-    threadData.name = MAIN_NAME;
+    threadData.name = MAIN_NAME.toCharArray();
   }
 
     /**
@@ -462,7 +467,7 @@ public class ThreadInfo extends InfoObject
         this.objRef = objRef;
         this.targetRef = runnableRef;
 
-        threadData.name = vm.getElementInfo(nameRef).asString().getValue();
+        threadData.name = vm.getElementInfo(nameRef).asString().getValue().toCharArray();
 
         // note the thread is not yet in the ThreadList, we have to register from the caller
     }
@@ -494,7 +499,8 @@ public class ThreadInfo extends InfoObject
         env = new MJIEnv(this);
     }
 
-    public Memento<ThreadInfo> getMemento(MementoFactory factory) {
+    @Override
+	public Memento<ThreadInfo> getMemento(MementoFactory factory) {
         return factory.getMemento(this);
     }
 
@@ -723,8 +729,9 @@ public class ThreadInfo extends InfoObject
      * Returns true if this thread is either RUNNING or UNBLOCKED
      */
     public boolean isRunnable() {
-        if (threadData.suspendCount != 0)
-            return false;
+        if (threadData.suspendCount != 0) {
+			return false;
+		}
 
         switch (threadData.state) {
             case RUNNING:
@@ -740,8 +747,9 @@ public class ThreadInfo extends InfoObject
     }
 
     public boolean willBeRunnable() {
-        if (threadData.suspendCount != 0)
-            return false;
+        if (threadData.suspendCount != 0) {
+			return false;
+		}
 
         switch (threadData.state) {
             case RUNNING:
@@ -760,8 +768,9 @@ public class ThreadInfo extends InfoObject
     }
 
     public boolean isTimeoutRunnable() {
-        if (threadData.suspendCount != 0)
-            return false;
+        if (threadData.suspendCount != 0) {
+			return false;
+		}
 
         switch (threadData.state) {
 
@@ -931,13 +940,15 @@ public class ThreadInfo extends InfoObject
         return threadData.getState().name();
     }
 
-    public Iterator<StackFrame> iterator() {
+    @Override
+	public Iterator<StackFrame> iterator() {
         return new StackIterator();
     }
 
     public Iterable<StackFrame> invokedStackFrames() {
         return new Iterable<StackFrame>() {
-            public Iterator<StackFrame> iterator() {
+            @Override
+			public Iterator<StackFrame> iterator() {
                 return new InvokedStackIterator();
             }
         };
@@ -1327,7 +1338,7 @@ public class ThreadInfo extends InfoObject
 
 
     public String getName() {
-        return threadData.name;
+        return new String(threadData.name);
     }
 
 
@@ -1533,7 +1544,8 @@ public class ThreadInfo extends InfoObject
     }
 
 
-    public Object clone() {
+    @Override
+	public Object clone() {
         try {
             // threadData and top StackFrame are copy-on-write, so we should not have to clone them
             // lockedObjects are state-volatile and restored explicitly after a backtrack
@@ -1948,6 +1960,7 @@ public class ThreadInfo extends InfoObject
 
     private static int count = 0;
     private static long time = 0;
+    
 
     public static boolean logtrace = false;
     public static boolean RUN_SIMPLE = false;
@@ -1987,43 +2000,38 @@ public class ThreadInfo extends InfoObject
 	    		time = System.currentTimeMillis();
 	        }
 	        count++;
-	        if (System.currentTimeMillis() - time > 10000) {
-	        	int instructions = count / 10;
-	        	printSpeedLog(instructions);
-	        	time = System.currentTimeMillis();
+	        if (System.currentTimeMillis() - time > 10_000) {
+	        	int instructions = count;
 	        	count = 0;
-        		vm.getSystemState().gcIfNeeded();
+	        	printSpeedLog(instructions / 10);
+	        	if (checkGcNeeded(instructions)) {
+	        		vm.getSystemState().gcIfNeeded();
+	        	}
+	        	time = System.currentTimeMillis();
 	        }
-        	Instruction i = null;
+	        Instruction i = null;
  	        FeatureExpr ctx = top.stack.getCtx();
- 	        if (pc instanceof One) {
+ 	        if (pc.isOne()) {
  	        	i = pc.getValue();
  	        } else {
- 		    	Map<Instruction, FeatureExpr> map = pc.simplify(ctx).toMap();// XXX jens why simplify
- 		    	int minPos = Integer.MAX_VALUE;
- 		    	MethodInfo m = top.getMethodInfo();
- 		    	
- 		    	if (map.size() == 1) {
- 		    		for (Entry<Instruction, FeatureExpr> e : map.entrySet()) {
- 		    			i = e.getKey();
- 		    		}
- 		    	} else {
- 			   		for (Entry<Instruction, FeatureExpr> e : map.entrySet()) {
- 			   			final Instruction key = e.getKey();
- 						if (!(key instanceof ReturnInstruction)){
- 			    			if (key.position < minPos && key.mi == m) {
- 			    				minPos = key.position;
- 			    				i = key;
- 			    			}
- 			   			} else if (i == null && key.mi == m) {
- 			   				i = key;
- 			   			}
- 			   		}
- 			   		ctx = map.get(i).and(ctx);
- 		    	}
- 	        }	
+ 		    	final Map<Instruction, FeatureExpr> map = pc.toMap();
+	    		int minPos = Integer.MAX_VALUE;
+		   		for (final Instruction ins : map.keySet()) {
+					if (!(ins instanceof ReturnInstruction)){
+		    			if (ins.position < minPos) {
+		    				minPos = ins.position;
+		    				i = ins;
+		    			}
+		   			} else if (i == null) {
+		   				i = ins;
+		   			}
+		   		}
+		   		ctx = map.get(i).and(ctx);
+ 	        }
  	        	
-     		if (RuntimeConstants.debug) {
+				if (RuntimeConstants.debug) {
+     			System.out.print(executedInstructions);
+     			System.out.print("  ");
      			System.out.print(top.getDepth());
      			if (top.getDepth() < 10) {
      				System.out.print(" ");
@@ -2031,7 +2039,7 @@ public class ThreadInfo extends InfoObject
  				System.out.println(" " + i + " if " + ctx);
  			
  			}
- 	    	
+     		
      		if (RuntimeConstants.tracing) {
      			performTracing(i, ctx);
      		}
@@ -2040,23 +2048,26 @@ public class ThreadInfo extends InfoObject
      		final int currentStackDepth = stackDepth;
      		// the point where the instruction is executed
      		final Conditional<Instruction> next = i.execute(ctx, this);
-
      		coverage.postExecuteInstruction(i, ctx);
      		
     		final int poped = currentStackDepth - stackDepth;
     		if (i instanceof InvokeInstruction) {
-    			nextPc = next;
+    			nextPc = next.simplify(top.stack.getCtx());
 	    		if (stackDepth > RuntimeConstants.MAX_FRAMES) {
 	            	nextPc = ChoiceFactory.create(ctx, 
 	            			new One<Instruction>(new EXCEPTION(StackOverflowError.class.getName(), "Too many frames (more than " + RuntimeConstants.MAX_FRAMES + ")")), 
-	            			next).simplify();
+	            			next).simplify(top.stack.getCtx());
             	}
     		} else if (i instanceof ReturnInstruction) {
-    			// instructions already joined at ReturnInstruction#getNext() 
-    			nextPc = next;
+    			// instructions already joined at ReturnInstruction#getNext()
+    			if (top == null) {
+    				nextPc = next;
+    			} else {
+    				nextPc = next.simplify(top.stack.getCtx());
+    			}
     		} else if (i instanceof ATHROW || i instanceof EXCEPTION || (poped > 0 && stackTraceMember(oldStack, top))) {
     			// some instruction (e.g., IDIV with div by zero) just pop frames but do not throw exceptions
-    			nextPc = ChoiceFactory.create(ctx, next, getPC()).simplify();
+    			nextPc = ChoiceFactory.create(ctx, next, getPC()).simplify(top.stack.getCtx());
     			popedFrames = poped;
 				int k = 0;
 				StackFrame stackPointer = oldStack;
@@ -2064,7 +2075,9 @@ public class ThreadInfo extends InfoObject
 				while (k < popedFrames) {
 					FeatureExpr newCtx = stackPointer.stack.getCtx().andNot(ctx);
 					stackPointer.stack.setCtx(newCtx);
+					stackPointer.pc = stackPointer.pc.simplify(newCtx);
 					stackPointer = stackPointer.prev;
+					
 					k++;
 				}
     		} else {
@@ -2105,11 +2118,37 @@ public class ThreadInfo extends InfoObject
   			// return to the current method after the chatch clause is set after an exception
   			pushFrames(oldStack, popedFrames);
   		}
-      return nextPc;
+      return getPC();
     } else {
       return (Conditional<Instruction>) One.NULL;
     }
   }
+
+    private static int countGc = 0;
+    private final static long maxMemory = Runtime.getRuntime().maxMemory();
+	private static boolean checkGcNeeded(int instructions) {
+		if (countGc++ >= 1) {
+			countGc = 0;
+			return true;
+		}
+		
+		// VM is slow, maybe because heap is full 
+		if (instructions < 1_000) {
+			return true;
+		}
+		
+		final long total = Runtime.getRuntime().totalMemory();
+		if (total + (100<<20/*100MB*/) >=  maxMemory) {
+			final long free = Runtime.getRuntime().freeMemory();
+			final long usedMemory = total - free;
+			if (usedMemory >> 2 > free) {
+				return true;
+			}
+		}
+		
+		
+		return false;
+	}
 
 	private void printSpeedLog(int instructions) {
 		StringBuilder sb = new StringBuilder();
@@ -2117,7 +2156,9 @@ public class ThreadInfo extends InfoObject
 		sb.append(" instructions / s (");
 		
 		sb.append(insertDots(executedInstructions));
-		sb.append(')');
+		sb.append(" @ ");
+		sb.append((Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory())>>20);
+		sb.append("MB)");
 		System.out.println(sb.toString());
 	}
 
@@ -2559,7 +2600,8 @@ public class ThreadInfo extends InfoObject
 
     Predicate<ThreadInfo> getRunnableNonDaemonPredicate() {
         return new Predicate<ThreadInfo>() {
-            public boolean isTrue(ThreadInfo ti) {
+            @Override
+			public boolean isTrue(ThreadInfo ti) {
                 return (ti.isRunnable() && !ti.isDaemon());
             }
         };
@@ -2640,10 +2682,18 @@ public class ThreadInfo extends InfoObject
         ElementInfo eiThread = heap.newObject(ctx, ciThread, this);
         objRef = eiThread.getObjectRef();
 
-        ElementInfo eiName = heap.newString(FeatureExprFactory.True(), MAIN_NAME, this);// TODO jens TRUE?
+        ElementInfo eiName = heap.newArray(FeatureExprFactory.True(), "C", MAIN_NAME.length(), this);
+        int i = 0;
+        for (char c : MAIN_NAME.toCharArray()) {
+        	eiName.setCharElement(ctx, i++, One.valueOf(c));
+        }
         int nameRef = eiName.getObjectRef();
         eiThread.setReferenceField(ctx, "name", new One<>(nameRef));
 
+        final ClassInfo ci = ClassLoaderInfo.getSystemResolvedClassInfo(Object.class.getName());
+        final ElementInfo blockerLock = heap.newObject(FeatureExprFactory.True(), ci, this);
+        eiThread.setReferenceField(ctx, "blockerLock", new One<>(blockerLock.getObjectRef()));
+        
         ElementInfo eiGroup = createMainThreadGroup(ctx, sysCl);
         eiThread.setReferenceField(ctx, "group", new One<>(eiGroup.getObjectRef()));
 
@@ -3578,7 +3628,8 @@ public class ThreadInfo extends InfoObject
         return null;
     }
 
-    public String toString() {
+    @Override
+	public String toString() {
         return "ThreadInfo [name=" + getName() + ",id=" + id + ",state=" + getStateName() + ']';
     }
 
@@ -3595,7 +3646,7 @@ public class ThreadInfo extends InfoObject
     }
 
     void setName(String newName) {
-        threadDataClone().name = newName;
+    	threadDataClone().name = newName.toCharArray();
 
         // see 'setPriority()', only that it's more serious here, because the
         // java.lang.Thread name is stored as a char[]
@@ -3620,7 +3671,8 @@ public class ThreadInfo extends InfoObject
     /**
      * Comparison for sorting based on index.
      */
-    public int compareTo(ThreadInfo that) {
+    @Override
+	public int compareTo(ThreadInfo that) {
         return this.id - that.id;
     }
 

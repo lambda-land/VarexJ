@@ -20,6 +20,7 @@
 package gov.nasa.jpf.vm;
 
 import java.io.PrintStream;
+import java.util.Arrays;
 
 import cmu.conditional.BiFunction;
 import cmu.conditional.ChoiceFactory;
@@ -90,7 +91,11 @@ public class CharArrayFields extends ArrayFields {
 
 	public CharArrayFields clone() {
 		CharArrayFields f = (CharArrayFields) cloneFields();
-		f.values = new One<>(values.getValue().clone());
+		try {
+			f.values = values.clone();
+		} catch (CloneNotSupportedException e) {
+			e.printStackTrace();
+		}
 		return f;
 	}
 
@@ -202,6 +207,29 @@ public class CharArrayFields extends ArrayFields {
 		for (int i = 0; i < v.length; i++) {
 			hd.add(v[i]);
 		}
+	}
+
+	@Override
+	public void fill(FeatureExpr ctx, final Conditional<?> value) {
+		if (Conditional.isTautology(ctx) && value.isOne()) {
+			final char[] newArray = new char[values.getValue(true).length];
+			Arrays.fill(newArray, (Character) value.getValue());
+			values = new One<char[]>(newArray);
+		}
+		values = values.mapf(ctx, new BiFunction<FeatureExpr, char[], Conditional<char[]>>() {
+
+			@Override
+			public Conditional<char[]> apply(FeatureExpr ctx, char[] y) {
+				final Character c = (Character) value.simplify(ctx).getValue();
+				final char[] newArray = new char[y.length];
+				Arrays.fill(newArray, c);
+				if (Conditional.isTautology(ctx)) {
+					return new One<char[]>(newArray);
+				}
+				return ChoiceFactory.create(ctx, new One<char[]>(newArray), new One<char[]>(y));
+			}
+
+		});
 	}
 
 }

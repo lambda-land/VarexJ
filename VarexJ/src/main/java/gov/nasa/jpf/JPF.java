@@ -20,7 +20,10 @@ package gov.nasa.jpf;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 import cmu.conditional.ChoiceFactory;
@@ -41,6 +44,12 @@ import gov.nasa.jpf.util.RunRegistry;
 import gov.nasa.jpf.vm.NoOutOfMemoryErrorProperty;
 import gov.nasa.jpf.vm.VM;
 import gov.nasa.jpf.vm.VMListener;
+import gov.nasa.jpf.vm.va.BufferedStackHandler;
+import gov.nasa.jpf.vm.va.HybridStackHandler;
+import gov.nasa.jpf.vm.va.HybridStackHandler.LiftedStack;
+import gov.nasa.jpf.vm.va.HybridStackHandler.NormalStack;
+import gov.nasa.jpf.vm.va.OneStackHandler;
+import gov.nasa.jpf.vm.va.StackHandler;
 import gov.nasa.jpf.vm.va.StackHandlerFactory;
 
 
@@ -50,7 +59,10 @@ import gov.nasa.jpf.vm.va.StackHandlerFactory;
  */
 public class JPF implements Runnable {
 	
+	public static List<Resetable> resetable = new ArrayList<>();
+	
 	public static Coverage COVERAGE;
+	
 	  
   public static String VERSION = "7.0"; // the major version number
 
@@ -71,8 +83,9 @@ public class JPF implements Runnable {
     @Override
     public void propertyChanged(Config config, String key, String oldValue, String newValue) {
       if ("listener".equals(key)) {
-        if (oldValue == null)
-          oldValue = "";
+        if (oldValue == null) {
+			oldValue = "";
+		}
         
         String[] nv = config.asStringArray(newValue);
         String[] ov = config.asStringArray(oldValue);
@@ -316,13 +329,29 @@ public class JPF implements Runnable {
       // set the trace method
       traceMethod = config.getString("traceMethod", null);
       
-      // Set StackHandlerFactory
-      String stackHandlerFactory = config.getString("stack", "");
-      if (stackHandlerFactory.equals("BufferedStackHandler")) {
-      	StackHandlerFactory.activateBufferedStackHandler();
-      } else {
-      	StackHandlerFactory.activateDefaultStackHandler();
-      }
+			// Set StackHandlerFactory
+			String stackHandlerFactory = config.getString("stack", "");
+			if (stackHandlerFactory.equals(BufferedStackHandler.class.getSimpleName())) {
+				StackHandlerFactory.activateBufferedStackHandler();
+			} else if (stackHandlerFactory.equals(OneStackHandler.class.getSimpleName())) {
+				StackHandlerFactory.activateOneStackHandler();
+			} else if (stackHandlerFactory.startsWith(HybridStackHandler.class.getSimpleName())) {
+				StackHandlerFactory.activateHybridStackHandler();
+				String[] split = stackHandlerFactory.split("[|]");
+				System.out.println(Arrays.toString(split));
+				if (split.length == 3) {
+					if (split[1].equals("JPF")) {
+						HybridStackHandler.normalStack = NormalStack.JPFStack;
+					}
+					if (split[2].equals("Buffered")) {
+						HybridStackHandler.liftedStack = LiftedStack.Buffered;
+					}
+				}
+			} else if (stackHandlerFactory.equals(StackHandler.class.getSimpleName())) {
+				StackHandlerFactory.activateDefaultStackHandler();
+			} else {
+				StackHandlerFactory.activateHybridStackHandler();
+			}
       
       // Set the ChoiceFactory
       String choice = config.getString("choice", Factory.TreeChoice.toString());
@@ -343,10 +372,12 @@ public class JPF implements Runnable {
   }
   
   public enum COVERAGE_TYPE {
-	  feature, stack, local, context, composedContext, time, interaction
+	  feature, stack, local, context, composedContext, time, interaction, frame
   }
   
   public static COVERAGE_TYPE SELECTED_COVERAGE_TYPE = null;
+
+  public static Map<Integer, Object> JVMheap = Collections.emptyMap();
 
   private void processInteractionCommand() {
 	String logInteractions = config.getString("interaction", null);
@@ -387,6 +418,10 @@ public class JPF implements Runnable {
 							break;
 						case interaction:
 							COVERAGE.setType("Interaction: ");
+							COVERAGE.setBaseValue(0);
+							break;
+						case frame:
+							COVERAGE.setType("Frame: ");
 							COVERAGE.setBaseValue(0);
 							break;
 						default:
@@ -714,7 +749,13 @@ public class JPF implements Runnable {
   /**
    * runs the verification.
    */
+  @Override
   public void run() {
+	  for (Resetable m : resetable) {
+		  m.reset();
+	  }
+	  
+	  
     Runtime rt = Runtime.getRuntime();
 
     // this might be executed consecutively, so notify everybody

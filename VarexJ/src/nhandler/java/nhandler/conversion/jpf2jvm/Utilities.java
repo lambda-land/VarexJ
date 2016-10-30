@@ -3,6 +3,7 @@ package nhandler.conversion.jpf2jvm;
 import java.lang.reflect.Field;
 
 import cmu.conditional.One;
+import de.fosd.typechef.featureexpr.FeatureExpr;
 import gov.nasa.jpf.vm.ArrayFields;
 import gov.nasa.jpf.vm.ElementInfo;
 import gov.nasa.jpf.vm.FieldInfo;
@@ -21,11 +22,10 @@ public class Utilities {
    * 
    * @param fld
    *          a field of a JVM object which is of primitive type.
-   * @param obj
+ * @param obj
    *          The JVM object that includes the field fld.
-   * @param ei
+ * @param ei
    *          a JPF object which is corresponding to the given JVM object, obj.
-   * 
    * @throws IllegalAccessException
    *           when method trying to access a private field of an JVM object
    *           whose "isAccessible" is not true. But that will not happen,
@@ -35,11 +35,11 @@ public class Utilities {
    * @throws ConversionException
    *           if the given field is not of primitive type
    */
-  public static void setJVMPrimitiveField (Field fld, Object obj, ElementInfo ei, FieldInfo fi) throws IllegalAccessException, ConversionException {
+  public static void setJVMPrimitiveField (Field fld, Object obj, ElementInfo ei, FieldInfo fi, FeatureExpr ctx) throws IllegalAccessException, ConversionException {
     if (fi.isBooleanField()) {
       fld.setBoolean(obj, ei.getBooleanField(fi).getValue());
     } else if (fi.isByteField()) {
-      fld.setByte(obj, ei.getByteField(fi).getValue());
+      fld.setByte(obj, ei.getByteField(fi).simplify(ctx).getValue());
     } else if (fi.isShortField()) {
       fld.setShort(obj, ei.getShortField(fi).getValue());
     } else if (fi.isIntField()) {
@@ -63,6 +63,7 @@ public class Utilities {
    * 
    * @param ei
    *          An ElementInfo which represents a JPF array of primitive type
+ * @param ctx TODO
    * 
    * @return a JVM array of primitive type which is created corresponding to the
    *         given JPF array represented by ei
@@ -70,14 +71,14 @@ public class Utilities {
    * @throws ConversionException
    *           if the given array is not of primitive type
    */
-  public static Object createJVMPrimitiveArr (ElementInfo ei) throws ConversionException {
+  public static Object createJVMPrimitiveArr (ElementInfo ei, FeatureExpr ctx) throws ConversionException {
     String type = ei.getType();
     Object JVMObj = null;
 
     // byte[]
     if (type.equals("[B")) {
 //      JVMObj = ((ArrayFields) ei.getFields()).asByteArrayConcrete();
-      Byte[] ByteArray = ((ArrayFields) ei.getFields()).asByteArrayConcrete();
+      Byte[] ByteArray = ((ArrayFields) ei.getFields()).asByteArrayConcrete(ctx);
         byte[] byteArray = new byte[ByteArray.length];
         for (int i = 0; i < ByteArray.length; i++) {
             byteArray[i] = ByteArray[i].byteValue();
@@ -88,7 +89,7 @@ public class Utilities {
     else if (type.equals("[C")) {
       JVMObj = ((ArrayFields) ei.getFields()).asCharArray();
       if (JVMObj instanceof One) {
-        JVMObj = ((One) JVMObj).getValue();
+        JVMObj = ((One<?>) JVMObj).getValue();
       }
     }
     // short[]

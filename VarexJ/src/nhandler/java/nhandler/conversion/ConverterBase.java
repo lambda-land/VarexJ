@@ -1,9 +1,16 @@
 package nhandler.conversion;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import cmu.utils.RuntimeConstants;
+import gov.nasa.jpf.JPF;
+import gov.nasa.jpf.Resetable;
 import gov.nasa.jpf.vm.MJIEnv;
 import nhandler.util.ValueIdentityHashMap;
-
-import java.util.*;
 
 /**
  * This is just a common root of all Converters and keeps key elements used by
@@ -13,32 +20,108 @@ import java.util.*;
  */
 public class ConverterBase {
 
-	//  public static HashSet<Object> objSetJVMBackup = new HashSet<>();
 	public static ArrayList<Object> socketObjArray = new ArrayList<>();
 	public static ConverterFactory converterFactory;
 	/**
 	 * Keeps track of the JVM objects that have been already created from their
 	 * corresponding JPF objects, while performing conversion from JPF to JVM
 	 */
-	protected static ValueIdentityHashMap<Integer, Object> objMapJPF2JVM = new ValueIdentityHashMap<Integer, Object>();
+	@SuppressWarnings("serial")
+	public static Map<Integer, Object> objMapJPF2JVM = new HashMap<Integer, Object>() {
+		@Override
+		public Object put(Integer key, Object value) {
+			if (containsKey(key)) {
+				Object currentObject = get(key);
+				if (currentObject == value) {
+					return null;
+				}
+				System.out.println("--- object for id " + key + " already created, but newly created " + value);
+				for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
+					System.out.println(element);
+				}
+				System.out.println("-----------------------------------");
+			}
+			return super.put(key, value);
+		};
+
+		@SuppressWarnings("unused")
+		@Override
+		public Object remove(Object key) {
+			Object object = super.remove(key);
+			if (RuntimeConstants.debugGC && object != null) {
+				System.out.println("GC JVM Heap(" + objMapJPF2JVM.size() + ") " + printSize(object) + object.getClass().getName() + " @ " + key);
+			}
+			return object;
+		}
+
+		private String printSize(final Object object) {
+			int size = 0;
+			if (object.getClass().isArray()) {
+				final String componentType = object.getClass().getComponentType().getSimpleName();
+				switch (componentType) {
+				case "char":
+					size = Character.SIZE * ((char[]) object).length;
+					break;
+				case "byte":
+					size = Byte.SIZE * ((byte[]) object).length;
+					break;
+				default:
+					System.out.println("to string for " + componentType + " not supported");
+					break;
+				}
+			} else if (object instanceof String) {
+				size = (Character.SIZE * ((String)object).toCharArray().length) >> 3;
+			}
+			if (size == 0) {
+				return "";
+			}
+			size = (size >> 3);
+			if (size >= 1024) {
+				size = size >> 10;
+				if (size >= 1024) {
+					size = size >> 10;
+					return size + " MB ";
+				}
+				return size + " KB ";
+			}
+			return size + " Byte ";
+		};
+	};
+
 	/**
 	 * Keeps track of the JVM classes that have been already created from their
 	 * corresponding JPF classes, while performing conversion from JPF to JVM
 	 */
-	protected static ValueIdentityHashMap<Integer, Class<?>> classMapJPF2JVM = new ValueIdentityHashMap<Integer, Class<?>>();
+	public static ValueIdentityHashMap<Integer, Class<?>> classMapJPF2JVM = new ValueIdentityHashMap<Integer, Class<?>>();
 
 	/**
 	 * Keeps track of the JPF objects that have been already updated from their
 	 * corresponding JVM objects, while performing conversion from JVM to JPF
 	 */
-	protected static HashMap<Integer, Object> updatedJPFObj = new ValueIdentityHashMap<Integer, Object>();
+	public static HashMap<Integer, Object> updatedJPFObj = new ValueIdentityHashMap<Integer, Object>();
 
 	/**
 	 * Keeps track of the JPF classes that have been already updated from their
 	 * corresponding JVM classes, while performing conversion from JVM to JPF
 	 */
-	protected static Set<Integer> updatedJPFCls = new HashSet<Integer>();
+	public static Set<Integer> updatedJPFCls = new HashSet<Integer>();
 	static boolean resetState;
+
+	static {
+		JPF.resetable.add(new Resetable() {
+
+			@Override
+			public void reset() {
+				updatedJPFObj.clear();
+				classMapJPF2JVM.clear();
+				objMapJPF2JVM.clear();
+				updatedJPFCls.clear();
+				resetState = false;
+			}
+
+		});
+		JPF.JVMheap = objMapJPF2JVM;
+	}
 
 	public static void init() {
 		converterFactory = new DefaultConverterFactory();
@@ -49,7 +132,8 @@ public class ConverterBase {
 	}
 
 	/**
-	 * This needs to be invoked at the beginning of every method created on-the-fly
+	 * This needs to be invoked at the beginning of every method created
+	 * on-the-fly
 	 */
 	public static void reset(MJIEnv env) {
 		ConverterBase.resetState = env.getConfig().getBoolean("nhandler.resetVMState");
@@ -59,9 +143,9 @@ public class ConverterBase {
 			// property in the properties file
 			ConverterBase.objMapJPF2JVM.clear();
 			ConverterBase.classMapJPF2JVM.clear();
-//	      clearObj(ConverterBase.objMapJPF2JVM);
-//	      clearCls(ConverterBase.classMapJPF2JVM);
-			//      checkSocket();
+			// clearObj(ConverterBase.objMapJPF2JVM);
+			// clearCls(ConverterBase.classMapJPF2JVM);
+			// checkSocket();
 		}
 
 		// these always need to be reset
@@ -90,16 +174,12 @@ public class ConverterBase {
 						|| obj.getClass().getName().equals("java.util.zip.Deflater")
 						) {
 
-//          if (!socketObjArray.contains(obj)) {
-//            socketObjArray.add(obj);
-//          }
 					continue;
 				} else {
 					changed = true;
-//          objSetJVMBackup.add(entry.getValue());
 					map.remove(entry.getKey());
 					break;
-				} //WARNING: these lines were written when I was fighting with my girlfirend. BE CAREFUL!!!!
+				}
 			}
 		}
 	}
@@ -141,24 +221,6 @@ public class ConverterBase {
 			socketObjArray.clear();
 			objMapJPF2JVM.clear();
 		}
-//    System.out.println("checkingSocket");
-//    boolean changed = true;
-//    while (changed) {
-//      changed = false;
-//      for (Map.Entry<Integer, Object> entry : objMapJPF2JVM.entrySet()) {
-//        if (entry.getValue() instanceof Socket) {
-//          System.out.println("instanceof Socket");
-//          Socket socketObj = (Socket) entry.getValue();
-//          if (socketObjArray.size() > 1 && socketObjArray.get(0) == socketObj) {
-//            System.out.println("closing socket!!!!!");
-//            changed = true;
-//            objMapJPF2JVM.remove(entry);
-//            socketObjArray.remove(0);
-//            break;
-//          }
-//        }
-//      }
-//    }
 	}
 
 }

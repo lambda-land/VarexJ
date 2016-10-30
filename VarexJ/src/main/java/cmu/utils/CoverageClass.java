@@ -13,6 +13,7 @@ import de.fosd.typechef.featureexpr.FeatureExpr;
 import de.fosd.typechef.featureexpr.FeatureExprFactory;
 import gov.nasa.jpf.JPF;
 import gov.nasa.jpf.jvm.bytecode.LocalVariableInstruction;
+import gov.nasa.jpf.jvm.bytecode.ReturnInstruction;
 import gov.nasa.jpf.vm.ClassInfo;
 import gov.nasa.jpf.vm.ElementInfo;
 import gov.nasa.jpf.vm.FieldInfo;
@@ -21,6 +22,8 @@ import gov.nasa.jpf.vm.LocalVarInfo;
 import gov.nasa.jpf.vm.MethodInfo;
 import gov.nasa.jpf.vm.StackFrame;
 import gov.nasa.jpf.vm.ThreadInfo;
+import gov.nasa.jpf.vm.va.HybridStackHandler;
+import gov.nasa.jpf.vm.va.IStackHandler;
 
 /**
  * This class handles how and which data is covered.
@@ -72,6 +75,11 @@ public class CoverageClass {
 			if (JPF.SELECTED_COVERAGE_TYPE == JPF.COVERAGE_TYPE.time) {
 				time = System.nanoTime() - time;
 			}
+			StackFrame topFrame = ti.getTopFrame();
+			
+			if (topFrame != null && (topFrame.getMethodInfo() != i.getMethodInfo())) {
+				return;
+			}
 
 			Object newLocal = null;
 			int newLocalSize = localSize;
@@ -82,8 +90,8 @@ public class CoverageClass {
 					index = li.getLocalVariableIndex();
 				}
 				if (index != -1) {
-					newLocal = ti.getTopFrame().stack.getLocal(index);
-					newLocalSize = ti.getTopFrame().stack.getLocal(ti.getTopFrame().stack.getCtx(), index).toMap().size();
+					newLocal = topFrame.stack.getLocal(index);
+					newLocalSize = topFrame.stack.getLocal(topFrame.stack.getCtx(), index).toMap().size();
 				}
 			}
 			performCoverage(i, ctx, time, localSize, oldLocal, newLocalSize, newLocal);
@@ -128,12 +136,45 @@ public class CoverageClass {
 				case time:
 					coverTime(instruction, time, file);
 					break;
+				case frame:
+					coverFrame(instruction, file);
+					break;
 				default:
 					throw new RuntimeException(JPF.SELECTED_COVERAGE_TYPE + " not implemented");
 				}
 
 			}
 		}
+	}
+
+	private void coverFrame(Instruction instruction, String file) {
+		IStackHandler stack = ti.getTopFrame().stack;
+		if (instruction instanceof ReturnInstruction) {
+			return;
+		}
+		String text = "";
+		Interaction coverage = JPF.COVERAGE.getCoverage(file, instruction.getLineNumber());
+		if (coverage != null && coverage.getInteraction() == 10) {
+			return;
+		}
+		int interaction = 0;
+		if (stack instanceof HybridStackHandler) {
+			text = ((HybridStackHandler) stack).getStackHandler().getClass().toString();
+			text += "\n";
+			text += ti.getTopFrame().getMethodName();
+			text += "\n";
+			text += ((HybridStackHandler) stack).getStackHandler();
+			if (((HybridStackHandler) stack).isLifted()) {
+				if (stack.getStackWidth() > 1) {
+					interaction = stack.getStackWidth() + 4;
+				} else {
+					interaction = 2;
+				}
+			} else {
+				interaction = 1;
+			}
+		}
+		JPF.COVERAGE.setLineCovered(file, instruction.getLineNumber(), interaction, text + "\n" + instruction);	
 	}
 
 	private void coverTime(Instruction instruction, long time, String file) {

@@ -1,21 +1,27 @@
+
+
+![Travis Logo](https://pbs.twimg.com/profile_images/3378789570/e1da61d4058395b770cd5ce15a6925e6_normal.png)
+[![Build Status](https://travis-ci.org/meinicke/VarexJ.svg?branch=master)](https://travis-ci.org/meinicke/VarexJ)
+
+[//]: # (![Jenkins Logo](http://mirrors.jenkins-ci.org/art/jenkins-logo/favicon.ico))
+[//]: # ([![Build Status](http://feature.isri.cmu.edu:8080/job/VarexJ/badge/icon)](http://feature.isri.cmu.edu:8080/job/VarexJ/))
+
 # Overview
 
 VarexJ is a variability-aware interpreter for Java(7) bytecode based on Java Pathfinder v7.0 (rev 1155+) see: http://javapathfinder.sourceforge.net/.
 
 JDK 7 is required.
 
-You will also need the `jpf-core` JPF module.
-
-
 # Build:
 
 Import the project into eclipse.
 
-If it does not build automatically, right-click on the build.xml \ run as \ Ant BUild
-The build process has to be run with JDK 7, JRE will not work.
+Use gradle to build the project (e.g., ./gradlew build)
 
-Locate the `site.properties` file in the VarexJ project directory.
-Make sure that the value for the `jpf-core` key points to the correct location for the JPF module on your system.
+Within Eclipse you can use the gradle plugin: https://github.com/spring-projects/eclipse-integration-gradle/
+
+* On the "build.gradle" file Run as/Gradle build... Specify "build" at the Gradle Tasks page and press run
+* You may need to generate eclipse project files: Specify "eclipse" at the Gradle Tasks page
 
 
 # JPF options:
@@ -47,4 +53,15 @@ b) as JVM via command line:
 
 `java -jar ..\RunJPF.jar +native_classpath=.."path to VarexJ"\lib\* +search.class=.search.RandomSearch +featuremodel="path to the feature model"\model.dimacs +choice=TreeChoice +factory=BDD +classpath="path to the application"\bin\ A.B.Main args `
 
+c) using a main method:
 
+	public static void main(String[] _) {
+		String path = "C:/Project/";
+		String[] args = {
+			"+classpath=" + path + "bin",
+			"+search.class=.search.RandomSearch",
+			"+featuremodel=" + path + "model.dimacs", 
+			"Main"
+		};
+		JPF.main(args);
+	}

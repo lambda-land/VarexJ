@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import de.fosd.typechef.featureexpr.FeatureExpr;
+import de.fosd.typechef.featureexpr.FeatureExprFactory;
 
 /**
  * Choice implementation using a map from value to {@link FeatureExpr}.
@@ -164,7 +165,7 @@ public class MapChoice<T> extends IChoice<T> implements Cloneable {
 
 	@Override
 	public Conditional<T> clone() throws CloneNotSupportedException {
-		throw new RuntimeException("not yet implemented");
+		return new MapChoice<>(map);
 	}
 	
 	@Override
@@ -205,6 +206,18 @@ public class MapChoice<T> extends IChoice<T> implements Cloneable {
 	@Override
 	public int size() {
 		return map.size();
+	}
+	
+	@Override
+    public FeatureExpr getFeatureExpr(T t) {
+		FeatureExpr ret = map.get(t);
+		if(ret == null) return FeatureExprFactory.False();
+		return ret;
+	}
+    
+	@Override
+    public Conditional<T>[] split(FeatureExpr ctx) {
+		return new Conditional[] { this.simplify(ctx), this.simplify(ctx.not()) };
 	}
 
 }

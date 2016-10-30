@@ -25,7 +25,6 @@ public abstract class JPF2JVMConverter extends ConverterBase {
         if (JPFRef == MJIEnv.NULL) {
             return null;
         }
-
         ClassInfo ci = env.getReferredClassInfo(ctx, JPFRef);
         JPF2JVMConverter converter = ConverterBase.converterFactory.getJPF2JVMConverter(ci.getName());
         return converter.getJVMCls(JPFRef, env, ctx);
@@ -35,7 +34,10 @@ public abstract class JPF2JVMConverter extends ConverterBase {
         if (JPFRef == MJIEnv.NULL) {
             return null;
         }
-
+        if (ConverterBase.objMapJPF2JVM.containsKey(JPFRef)) {
+        	Object object = ConverterBase.objMapJPF2JVM.get(JPFRef);
+        	return  object;
+        }
         DynamicElementInfo dei = (DynamicElementInfo) env.getHeap().get(JPFRef);
         ClassInfo ci = dei.getClassInfo();
         JPF2JVMConverter converter = ConverterBase.converterFactory.getJPF2JVMConverter(ci.getName());
@@ -68,7 +70,6 @@ public abstract class JPF2JVMConverter extends ConverterBase {
              */
             if (JVMCls == null) {
                 ClassInfo ci = env.getReferredClassInfo(ctx, JPFRef);
-
                 // Used to store static fields
                 StaticElementInfo sei = ci.getStaticElementInfo();
 
@@ -127,6 +128,7 @@ public abstract class JPF2JVMConverter extends ConverterBase {
                 // we treat Strings differently
                 if (JPFCl.isStringClassInfo()) {
                     JVMObj = createStringObject(JPFRef, env, ctx);
+                    ConverterBase.objMapJPF2JVM.put(JPFRef, JVMObj);
                 } else {
                     int JPFClsRef = JPFCl.getStaticElementInfo().getClassObjectRef();
                     Class<?> JVMCl = this.getJVMCls(JPFClsRef, env, ctx);
@@ -143,14 +145,19 @@ public abstract class JPF2JVMConverter extends ConverterBase {
                             }
                         } catch (ClassNotFoundException e) {
                             e.printStackTrace();
+                            System.out.println("JPF2JVMConverter.getJVMNonArrObj()");
                         }
                         return JVMObj;
                     } else {
                         // Creates a new instance of JVMCl
-                        JVMObj = instantiateFrom(JVMCl);
+                    	if (ConverterBase.objMapJPF2JVM.containsKey(JPFRef)) {
+                    		JVMObj = ConverterBase.objMapJPF2JVM.get(JPFRef);
+                    		System.out.println("JVM object " + JVMObj + " already exists!");
+                    	} else {
+                    		JVMObj = instantiateFrom(JVMCl);
+                    		ConverterBase.objMapJPF2JVM.put(JPFRef, JVMObj);
+                    	}
                     }
-
-                    ConverterBase.objMapJPF2JVM.put(JPFRef, JVMObj);
                     setInstanceFields(JVMObj, dei, env, ctx);
                 }
             } else {
@@ -162,9 +169,9 @@ public abstract class JPF2JVMConverter extends ConverterBase {
         return JVMObj;
     }
 
-    protected abstract void setInstanceFields(Object JVMObj, DynamicElementInfo dei, MJIEnv env, FeatureExpr ctx) throws ConversionException;
+    public abstract void setInstanceFields(Object JVMObj, DynamicElementInfo dei, MJIEnv env, FeatureExpr ctx) throws ConversionException;
 
-    protected abstract void updateInstanceFields(Object JVMObj, DynamicElementInfo dei, MJIEnv env, FeatureExpr ctx) throws ConversionException;
+    public abstract void updateInstanceFields(Object JVMObj, DynamicElementInfo dei, MJIEnv env, FeatureExpr ctx) throws ConversionException;
 
     /**
      * Returns a JVM array corresponding to the given JPF array. If such an array
@@ -190,7 +197,7 @@ public abstract class JPF2JVMConverter extends ConverterBase {
 
                 // Array of primitive type
                 if (dei.getClassInfo().getComponentClassInfo().isPrimitive()) {
-                    JVMArr = Utilities.createJVMPrimitiveArr(dei);
+                    JVMArr = Utilities.createJVMPrimitiveArr(dei, ctx);
                 }
                 // Array of Non-primitives
                 else {
@@ -232,16 +239,18 @@ public abstract class JPF2JVMConverter extends ConverterBase {
         }
 
         FieldInfo fi = str.getFieldInfo("value");
-        int fieldValueRef = str.getFields().getReferenceValue(fi.getStorageOffset()).getValue();
+        int fieldValueRef = str.getFields().getReferenceValue(fi.getStorageOffset()).simplify(ctx).getValue();
 
         // this is String.value which is of type of char[]
         Object value = this.getJVMObj(fieldValueRef, env, ctx);
         // In case that value is of the type One
         Object JVMObj;
-        if (value instanceof Conditional)
-            JVMObj = new String((char[]) ((Conditional<?>) value).simplify(ctx).getValue());
-        else {
-            System.out.println("Warning from JPF2JVMConverter.java L244, JVMObj is not One");
+        if (value instanceof Conditional) {
+			JVMObj = new String((char[]) ((Conditional<?>) value).simplify(ctx).getValue());
+		} else {
+        	// TODO
+//            System.out.println("Warning from JPF2JVMConverter.java L244, JVMObj is not One:");
+//            System.out.println('\t' + Arrays.toString((char[]) value).replaceAll(",\\s", ""));
             JVMObj = new String((char[]) value);
         }
         ConverterBase.objMapJPF2JVM.put(JPFRef, JVMObj);

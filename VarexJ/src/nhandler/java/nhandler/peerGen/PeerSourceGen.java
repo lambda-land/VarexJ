@@ -58,6 +58,7 @@ public class PeerSourceGen {
 
     if (!this.file.exists()){
       this.file.createNewFile();
+      System.out.println("Create Peer File  " + file);
       generateMinimalPeerSource();
     } else{
       loadContent();
@@ -139,7 +140,9 @@ public class PeerSourceGen {
   }
 
   protected void removeClassFooter (){
-    content.deleteCharAt(content.lastIndexOf("}"));
+	  if (content.indexOf("}") > 0) {
+		  content.deleteCharAt(content.lastIndexOf("}"));
+	  }
   }
 
   private void addDoubleIndent (){

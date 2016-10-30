@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import de.fosd.typechef.featureexpr.FeatureExpr;
+import de.fosd.typechef.featureexpr.FeatureExprFactory;
 import gov.nasa.jpf.vm.MJIEnv;
 
 /**
@@ -21,6 +22,10 @@ public class One<T> extends Conditional<T> implements Cloneable {
 	public static final One<Boolean> FALSE = new One<>(Boolean.FALSE);
 	public static final One<Boolean> TRUE = new One<>(Boolean.TRUE);
 	public static final One<Integer> MJIEnvNULL = new One<>(MJIEnv.NULL);
+	
+	public static final One<Integer> ONE = new One<>(1);
+	public static final One<Integer> ZERO = new One<>(0);
+	public static final One<Integer> NEG_ONE = new One<>(-1);
 	
 	private T value;
 
@@ -193,4 +198,34 @@ public class One<T> extends Conditional<T> implements Cloneable {
 		}
 	}
 
+	@Override
+	public boolean isOne() {
+		return true;
+	}
+	
+	@Override
+    public FeatureExpr getFeatureExpr(T t) {
+		if(value == t) return FeatureExprFactory.True();
+		if(value != null && t != null && value.equals(t)) return FeatureExprFactory.True();
+		return FeatureExprFactory.False();
+	}
+    
+	@Override
+    public Conditional<T>[] split(FeatureExpr ctx) {
+    	return new Conditional[]{this, this};
+    }
+	
+	@Override
+    public <U,Y> Conditional<U> fastApply(final Conditional<Y> rhs, final BiFunction<T, Y, Conditional<U>> f) {
+		return rhs.mapfr(FeatureExprFactory.True(), new BiFunction<FeatureExpr, Y, Conditional<U>>() {
+			public Conditional<U> apply(final FeatureExpr cc, final Y y) {
+				return f.apply(value, y);
+			}
+		});
+    }
+	
+	@Override
+	public int depth() {
+	    return 1;
+	}
 }

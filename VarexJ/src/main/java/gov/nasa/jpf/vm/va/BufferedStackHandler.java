@@ -28,8 +28,7 @@ public class BufferedStackHandler extends StackHandler implements Cloneable, ISt
 	private LinkedList<Tuple> buffer = new LinkedList<>();
 	private FeatureExpr bufferCTX = FeatureExprFactory.True();
 	private int maxStackSize;
-	public StackHandlerTracker c = new StackHandlerTracker();
-	
+
 	@Override
 	public String toString() {
 		StringBuilder string = new StringBuilder();
@@ -66,8 +65,8 @@ public class BufferedStackHandler extends StackHandler implements Cloneable, ISt
 		maxStackSize = nOperands;
 		locals = new Conditional[nLocals];
 		Arrays.fill(locals, nullValue);
-		stack = new One<>(new Stack(nOperands, c));
-		stackCTX = ctx;
+		stack.init(new Stack(nOperands));
+		setCtx(ctx);
 	}
 
 	public BufferedStackHandler() {
@@ -90,7 +89,9 @@ public class BufferedStackHandler extends StackHandler implements Cloneable, ISt
 		clone.buffer = (LinkedList<Tuple>) buffer.clone();
 		clone.bufferCTX = bufferCTX;
 
-		clone.stack = stack.map(new CopyStack());
+		//clone.stack = stack.map(new CopyStack());
+		clone.stack = this.stack.clone();
+		
 		return clone;
 	}
 
@@ -114,10 +115,14 @@ public class BufferedStackHandler extends StackHandler implements Cloneable, ISt
 	 */
 
 	public void debufferAll() {
+		//System.out.println("debufferAll()");
+		//System.out.println(bufferCTX);
 		final FeatureExpr ctx = bufferCTX;
 		bufferCTX = FeatureExprFactory.False();
 		while (!buffer.isEmpty()) {
 			final Tuple value = buffer.removeLast();
+			superPush(ctx, value.value, value.isRef);
+			/*
 			value.value.mapf(ctx, new VoidBiFunction<FeatureExpr, Object>() {
 
 				@Override
@@ -126,6 +131,7 @@ public class BufferedStackHandler extends StackHandler implements Cloneable, ISt
 				}
 
 			});
+			*/
 		}
 		bufferCTX = FeatureExprFactory.True();
 	}
@@ -706,6 +712,8 @@ public class BufferedStackHandler extends StackHandler implements Cloneable, ISt
 				isRef = v.isRef;
 			} else if (isRef != v.isRef) {
 				debufferAll();
+				super.pushLocal(ctx, index);
+				/*
 				value.mapf(ctx, new BiFunction<FeatureExpr, Entry, Conditional<Object>>() {
 
 					@Override
@@ -714,6 +722,7 @@ public class BufferedStackHandler extends StackHandler implements Cloneable, ISt
 						return null;
 					}
 				});
+				*/
 				return;
 			}
 		}

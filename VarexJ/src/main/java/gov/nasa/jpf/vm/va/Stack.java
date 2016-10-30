@@ -16,12 +16,10 @@ public class Stack {
 
 	public int top;
 	public Entry[] slots;
-	public StackHandlerTracker c;
 
-	public Stack(int nOperands, StackHandlerTracker dc) {
+	public Stack(int nOperands) {
 		top = -1;
 		slots = new Entry[nOperands];
-		c = dc;
 	}
 
 	public void clear() {
@@ -89,6 +87,10 @@ public class Stack {
 	public void push(Integer value, boolean isRef) {
 		slots[++top] = new Entry(value, isRef);
 	}
+	
+	public void push(Entry entry) {
+		slots[++top] = entry;
+	}
 
 	public boolean isRef(int offset) {
 //		 if (top - offset < 0) {
@@ -113,8 +115,7 @@ public class Stack {
 	}
 
 	Stack copy() {
-		c.stackcopy(this);
-		Stack clone = new Stack(slots.length, c);
+		Stack clone = new Stack(slots.length);
 		clone.top = top;
 		System.arraycopy(slots, 0, clone.slots, 0, top + 1);
 		return clone;
@@ -162,7 +163,6 @@ public class Stack {
 				}
 			}
 			return true;
-//			return Arrays.equals(slots, ((Stack) o).slots);
 		}
 		return false;
 	}
@@ -316,6 +316,7 @@ class Entry {
 
 	@Override
 	public boolean equals(Object o) {
+	  if(o == null) return false;
 		return ((Entry) o).value == value && ((Entry) o).isRef == isRef;
 	}
 
