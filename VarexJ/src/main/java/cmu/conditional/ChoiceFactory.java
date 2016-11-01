@@ -24,8 +24,6 @@ public class ChoiceFactory {
 	}
 	
 	public static <T> Conditional<T> create(final FeatureExpr featureExpr, final Conditional<T> thenBranch, final Conditional<T> elseBranch) {
-	    if(featureExpr.isTautology()) return thenBranch;
-	    if(featureExpr.isContradiction()) return elseBranch;
 		return f.create(featureExpr, thenBranch, elseBranch);
 	}
 	

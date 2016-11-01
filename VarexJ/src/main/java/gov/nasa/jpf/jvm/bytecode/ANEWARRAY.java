@@ -89,7 +89,7 @@ public class ANEWARRAY extends NewArrayInstruction {
 				// pushes the object reference on the top stack frame
 				
 				pushValue = ChoiceFactory.create(ctx, One.valueOf(aRef), pushValue);
-				
+
 				return getNext(ctx, ti);
 			}
 

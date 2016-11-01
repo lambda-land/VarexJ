@@ -334,7 +334,7 @@ public class BufferedStackHandler extends StackHandler implements Cloneable, ISt
 							});
 						}
 
-					throw new RuntimeException("Type " + value + " " + value.getClass() + " not supported " + t);
+					throw new RuntimeException("Type " + value.getClass() + " not supported " + t);
 				case LONG:
 					if (value instanceof Long) {
 						return buffer.pop().value;

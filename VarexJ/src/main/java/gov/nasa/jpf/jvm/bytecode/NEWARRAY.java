@@ -78,7 +78,6 @@ public class NEWARRAY extends NewArrayInstruction {
 
 				ElementInfo eiArray = heap.newArray(ctx, type, arrayLength, ti);
 				int arrayRef = eiArray.getObjectRef();
-	            
 				pushRef = ChoiceFactory.create(ctx, One.valueOf(arrayRef), pushRef);
 
 				return getNext(ctx, ti);

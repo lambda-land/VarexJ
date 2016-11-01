@@ -324,50 +324,6 @@ class VStack implements IVStack {
         slots[++size] = ChoiceFactory.create(ctx, value, (Conditional<Entry>) One.NULL);
     }
     
-    private boolean toEntry_isRef;
-    private boolean toEntry_bits;
-    private BiFunction<FeatureExpr, Object, Conditional<Entry>> toEntry = new BiFunction<FeatureExpr, Object, Conditional<Entry>>() {
-        
-        @Override
-        public Conditional<Entry> apply(final FeatureExpr f, final Object value) {
-            Entry e;
-            if (value instanceof Integer) {
-                e = Entry.create((int) value, toEntry_isRef);
-            } else if (value instanceof Long) {
-                flag = true;
-                long v = ((Long) value).longValue();
-                if(!toEntry_bits) {
-                    e = Entry.create((int) (v >> 32), toEntry_isRef);
-                } else {
-                    e = Entry.create((int) v, toEntry_isRef);
-                }
-            } else if (value instanceof Double) {
-                flag = true;
-                long v = Double.doubleToLongBits((Double) value);
-                if(!toEntry_bits) {
-                    e = Entry.create((int) (v >> 32), toEntry_isRef);
-                } else {
-                    e = Entry.create((int) v, toEntry_isRef);
-                }
-            } else if (value instanceof Float) {
-                e = Entry.create(Float.floatToIntBits((Float) value), toEntry_isRef);
-            } else if (value instanceof Byte) {
-                e = Entry.create(((Byte) value).intValue(), toEntry_isRef);
-            } else if (value instanceof Short) {
-                e = Entry.create((int) (Short) value, toEntry_isRef);
-            } else if (value == null) {
-                e = Entry.create(MJIEnv.NULL, toEntry_isRef);
-            } else if(value instanceof Conditional){
-                return ((Conditional) value).mapfr(f, toEntry);
-            } else {
-                throw new RuntimeException(value + " of type " + value.getClass() + " cannot be pushed to the stack.");
-            }
-
-            return new One<>(e);
-
-        }
-    };
-    
     private boolean flag;
     
     @SuppressWarnings("unchecked")
@@ -377,82 +333,62 @@ class VStack implements IVStack {
         if (value instanceof One) {
             push(ctx, ((One) value).getValue(), isRef);
         } else if (value instanceof Conditional) {
-            //System.out.println("value " + value);
             flag = false;
             Conditional<Object> vs = ((Conditional<Object>) value).simplify(ctx);
-            //System.out.println("value " + vs);
-
-            if(vs instanceof One) {
-                //throw new RuntimeException("True error");
-                push(ctx, ((One) vs).getValue(), isRef);
-                return;
-            }
-            
-//            Conditional<Entry> tmp = vs.mapfr(null, new BiFunction<FeatureExpr, Object, Conditional<Entry>>() {
-//    
-//                @Override
-//                public Conditional<Entry> apply(final FeatureExpr f, final Object value) {
-//                    Entry e;
-//                    if (value instanceof Integer) {
-//                        e = Entry.create((int) value, isRef);
-//                    } else if (value instanceof Long) {
-//                        flag = true;
-//                        long v = ((Long) value).longValue();
-//                        e = Entry.create((int) (v >> 32), isRef);
-//                    } else if (value instanceof Double) {
-//                        flag = true;
-//                        long v = Double.doubleToLongBits((Double) value);
-//                        e = Entry.create((int) (v >> 32), isRef);
-//                    } else if (value instanceof Float) {
-//                        e = Entry.create(Float.floatToIntBits((Float) value), isRef);
-//                    } else if (value instanceof Byte) {
-//                        e = Entry.create(((Byte) value).intValue(), isRef);
-//                    } else if (value instanceof Short) {
-//                        e = Entry.create((int) (Short) value, isRef);
-//                    } else if (value == null) {
-//                        e = Entry.create(MJIEnv.NULL, isRef);
-//                    } else {
-//                        throw new RuntimeException(value + " of type " + value.getClass() + " cannot be pushed to the stack.");
-//                    }
-//        
-//                    return new One<>(e);
-//        
-//                }
-//            });
-            
-            toEntry_isRef = isRef;
-            toEntry_bits = false;
-            
-            Conditional<Entry> tmp = vs.mapfr(null, toEntry);
-            
+            Conditional<Entry> tmp = vs.mapfr(null, new BiFunction<FeatureExpr, Object, Conditional<Entry>>() {
+    
+                @Override
+                public Conditional<Entry> apply(final FeatureExpr f, final Object value) {
+                    Entry e;
+                    if (value instanceof Integer) {
+                        e = Entry.create((int) value, isRef);
+                    } else if (value instanceof Long) {
+                        flag = true;
+                        long v = ((Long) value).longValue();
+                        e = Entry.create((int) (v >> 32), isRef);
+                    } else if (value instanceof Double) {
+                        flag = true;
+                        long v = Double.doubleToLongBits((Double) value);
+                        e = Entry.create((int) (v >> 32), isRef);
+                    } else if (value instanceof Float) {
+                        e = Entry.create(Float.floatToIntBits((Float) value), isRef);
+                    } else if (value instanceof Byte) {
+                        e = Entry.create(((Byte) value).intValue(), isRef);
+                    } else if (value instanceof Short) {
+                        e = Entry.create((int) (Short) value, isRef);
+                    } else if (value == null) {
+                        e = Entry.create(MJIEnv.NULL, isRef);
+                    } else {
+                        throw new RuntimeException(value + " of type " + value.getClass() + " cannot be pushed to the stack.");
+                    }
+        
+                    return new One<>(e);
+        
+                }
+            });
+           
             pushEntry(ctx, tmp);
-            
             if (!flag)
                 return;
     
-//            tmp = vs.mapfr(null, new BiFunction<FeatureExpr, Object, Conditional<Entry>>() {
-//                @Override
-//                public Conditional<Entry> apply(final FeatureExpr f, final Object value) {
-//                    Entry e;
-//                    if (value instanceof Long) {
-//                        long v = ((Long) value).longValue();
-//                        e = Entry.create((int) v, isRef);
-//                    } else if (value instanceof Double) {
-//                        long v = Double.doubleToLongBits((Double) value);
-//                        e = Entry.create((int) v, isRef);
-//                    } else {
-//                        throw new RuntimeException(value + " of type " + value.getClass() + " cannot be pushed to the stack.");
-//                    }
-//        
-//                    return new One<>(e);
-//        
-//                }
-//            });
-            
-            toEntry_bits = true;
-
-            tmp = vs.mapfr(null, toEntry);
-            
+            tmp = vs.mapfr(null, new BiFunction<FeatureExpr, Object, Conditional<Entry>>() {
+                @Override
+                public Conditional<Entry> apply(final FeatureExpr f, final Object value) {
+                    Entry e;
+                    if (value instanceof Long) {
+                        long v = ((Long) value).longValue();
+                        e = Entry.create((int) v, isRef);
+                    } else if (value instanceof Double) {
+                        long v = Double.doubleToLongBits((Double) value);
+                        e = Entry.create((int) v, isRef);
+                    } else {
+                        throw new RuntimeException(value + " of type " + value.getClass() + " cannot be pushed to the stack.");
+                    }
+        
+                    return new One<>(e);
+        
+                }
+            });
             pushEntry(ctx, tmp);
     
         } else {
