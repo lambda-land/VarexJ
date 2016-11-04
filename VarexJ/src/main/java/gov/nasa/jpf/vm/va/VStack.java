@@ -43,7 +43,7 @@ class VStack implements IVStack {
     
     @Override
     public void setCtx(FeatureExpr ctx) {
-        // System.out.println("setCtx " + ctx + " " + stackCTX);
+        //printStack("setCtx " + ctx + " " + stackCTX);
         stackCTX = ctx;
     }
 
@@ -52,6 +52,7 @@ class VStack implements IVStack {
      */
 
     private void resize() {
+        simpleCleanup();
         Conditional<Entry>[] tmp;
         // while(size >= 0 && slots[size].equals(One.NULL)) size--;
         if (size >= slots.length - 1) {
@@ -79,11 +80,14 @@ class VStack implements IVStack {
         while (i <= size) {
             // System.out.println("remove " + slots[i] + " " +
             // slots[i].equals(One.NULL));
+        	//if(slots[i].getFeatureExpr(null).orNot(stackCTX).isTautology()) {
             if (slots[i].equals(One.NULL)) {
                 if (j <= i)
                     j = i + 1;
-                while (j <= size && slots[j].equals(One.NULL))
-                    j++;
+                //while (j <= size && slots[j].getFeatureExpr(null).orNot(stackCTX).isTautology()) {
+                while (j <= size && slots[j].equals(One.NULL)) {
+                	j++;
+                }
                 if (j > size) {
                     size = i - 1;
                     break;
@@ -98,26 +102,28 @@ class VStack implements IVStack {
     }
 
     private void simpleCleanup() {
-        while (size >= 0 && slots[size].equals(One.NULL))
-            --size;
+        while (size >= 0 && slots[size].equals(One.NULL)) {
+    	//while (size >= 0 && slots[size].getFeatureExpr(null).orNot(stackCTX).isTautology()) {
+    		--size;
+        }
     }
 
-    public void fillholesHelper(final int count) {
-        // System.out.println("fillholesHelper");
-        if (count == -1)
-            return;
-        slots[count] = slots[count].mapfr(FeatureExprFactory.True(), new BiFunction<FeatureExpr, Entry, Conditional<Entry>>() {
-            public Conditional<Entry> apply(FeatureExpr c, Entry e) {
-                if (e == null) {
-                    return popEntryHelper(c, count - 1);
-                } else {
-                    return new One<>(e);
-                 }
-             }
-        }).simplify();
-        fillholesHelper(count - 1);
-        return;
-    }
+//    public void fillholesHelper(final int count) {
+//        // System.out.println("fillholesHelper");
+//        if (count == -1)
+//            return;
+//        slots[count] = slots[count].mapfr(FeatureExprFactory.True(), new BiFunction<FeatureExpr, Entry, Conditional<Entry>>() {
+//            public Conditional<Entry> apply(FeatureExpr c, Entry e) {
+//                if (e == null) {
+//                    return popEntryHelper(c, count - 1);
+//                } else {
+//                    return new One<>(e);
+//                 }
+//             }
+//        }).simplify();
+//        fillholesHelper(count - 1);
+//        return;
+//    }
 
     public void fillholes(FeatureExpr ctx) {
         for (int i = size; i >= 0; --i)
@@ -131,40 +137,40 @@ class VStack implements IVStack {
         }
         FeatureExpr hole = slots[count].getFeatureExpr(null).and(ctx);
         if (hole.isContradiction()) return;
-        slots[count] = ChoiceFactory.create(hole, popEntryHelper(hole, count - 1), slots[count]);
+        slots[count] = ChoiceFactory.create(hole, popEntryHelper(hole, count - 1), slots[count]).simplify();
         return;
     }
 
     /*
      * ref
      */
-    Boolean tmp = false;
+//    Boolean tmp = false;
+//
+//    public boolean hasAnyRef(FeatureExpr ctx) {
+//        Conditional<Boolean> res = new One<>(false);
+//        for (int i = 0; i <= this.size; i++) {
+//            final int j = i;
+//            res = res.mapfr(ctx, new BiFunction<FeatureExpr, Boolean, Conditional<Boolean>>() {
+//            public Conditional<Boolean> apply(FeatureExpr c, final Boolean x) {
+//                if (x == true) {
+//                    return new One<>(true);
+//                }
+//                return slots[j].mapfr(c, new BiFunction<FeatureExpr, Entry, Conditional<Boolean>>() {
+//                public Conditional<Boolean> apply(FeatureExpr c, Entry y) {
+//                    if (Conditional.isContradiction(c) || y == null) {
+//                        return new One<>(false);
+//                    } else {
+//                        return new One<>(y.isRef);
+//                    }
+//                }
+//                }).simplify();
+//            }
+//            }).simplify();
+//        }
+//        return res.simplify(ctx).getValue();
+//        // return res.getValue();
+//    }
 
-    public boolean hasAnyRef(FeatureExpr ctx) {
-        Conditional<Boolean> res = new One<>(false);
-        for (int i = 0; i <= this.size; i++) {
-            final int j = i;
-            res = res.mapfr(ctx, new BiFunction<FeatureExpr, Boolean, Conditional<Boolean>>() {
-            public Conditional<Boolean> apply(FeatureExpr c, final Boolean x) {
-                if (x == true) {
-                    return new One<>(true);
-                }
-                return slots[j].mapfr(c, new BiFunction<FeatureExpr, Entry, Conditional<Boolean>>() {
-                public Conditional<Boolean> apply(FeatureExpr c, Entry y) {
-                    if (Conditional.isContradiction(c) || y == null) {
-                        return new One<>(false);
-                    } else {
-                        return new One<>(y.isRef);
-                    }
-                }
-                }).simplify();
-            }
-            }).simplify();
-        }
-        return res.simplify(ctx).getValue();
-        // return res.getValue();
-    }
-/*
     private boolean res;
     @Override
     public boolean hasAnyRef(FeatureExpr ctx) {
@@ -183,9 +189,10 @@ class VStack implements IVStack {
         }
         return false;
     }
-  */  
+
     @Override
     public boolean isRef(FeatureExpr ctx, int offset) {
+    	//printStack();
         return peek(ctx, offset).map(new Function<Entry, Boolean>() {
             public Boolean apply(Entry e) {
                 if (e == null) {
@@ -198,6 +205,8 @@ class VStack implements IVStack {
     
     @Override
     public boolean isRefLocal(FeatureExpr ctx, int index) {
+        System.out.println("isRefLocal");
+
         Conditional<Integer> offset = index2offset(ctx, index);
         if(offset instanceof One) {
             Conditional<Entry> tmp = peek(ctx, offset.getValue());
@@ -228,6 +237,7 @@ class VStack implements IVStack {
     
     @Override
     public void setRef(final FeatureExpr ctx, final int index, final boolean ref) {
+        System.out.println("setRef");
         Conditional<Integer> offset = index2offset(ctx, index);
         fillholes(ctx);
         offset.mapfr(ctx, new VoidBiFunction<FeatureExpr, Integer>() {
@@ -258,12 +268,14 @@ class VStack implements IVStack {
     /*
      * top 
      */
-    
+    private int topSize_tmp;
     private <T> Conditional<Integer> topSize(final FeatureExpr ctx, final int count) {
+        //printStack("topSize");
         if (count == -1)
             return One.NEG_ONE;
         Conditional<Integer> tmp;
-        int res = 0;
+        //int res = 0;
+        topSize_tmp = 0;
         top = One.NEG_ONE;
         for (int i = 0; i <= count; i++) {
             final int j = i;
@@ -273,21 +285,29 @@ class VStack implements IVStack {
             if (tmp.equals(One.ZERO))
                 continue;
             if (tmp.equals(One.ONE)) {
-                ++res;
+                ++topSize_tmp;
                 continue;
             }
-            top.fastApply(tmp, new BiFunction<Integer, Integer, Conditional<Integer>>() {
+            top = top.fastApply(tmp, new BiFunction<Integer, Integer, Conditional<Integer>>() {
             public Conditional<Integer> apply(Integer x, Integer y) {
                 return new One<>(x + y);
             }
             });
         }
-        return top;
+        
+        if(topSize_tmp == 0) return top;
+        
+        return top.map(new Function<Integer, Integer>() {
+            public Integer apply(Integer x) {
+                return x + topSize_tmp;
+            }
+        });
     }
     
 
     @Override
     public Conditional<Integer> getTop() {
+    	//printStack();
         return topSize(FeatureExprFactory.True(), size);
     }
     
@@ -299,28 +319,58 @@ class VStack implements IVStack {
      */
     
     private void pushPlainValue(FeatureExpr ctx, int value, boolean isRef) {
-        resize();
-    
-        if (ctx.equivalentTo(stackCTX)) {
-            slots[++size] = new One<>(new Entry(value, isRef));
-        } else {
-            slots[++size] = ChoiceFactory.create(ctx, new One<>(new Entry(value, isRef)), (Conditional<Entry>) One.NULL);
-        }
+    	pushEntry(ctx, new One<>(new Entry(value, isRef)));
+        //if(ctx.isContradiction()) return;
+//        resize();
+//        if (ctx.equivalentTo(stackCTX)) {
+//            slots[++size] = new One<>(new Entry(value, isRef));
+//            return;
+//        }
+//        slots[++size] = ChoiceFactory.create(ctx, new One<>(new Entry(value, isRef)), (Conditional<Entry>) One.NULL);
+//        
+
+        
+        
+//        if(ctx.isTautology()) {
+//            slots[++size] = new One<>(new Entry(value, isRef));
+//        } else {
+//            slots[++size] = ChoiceFactory.create(ctx, new One<>(new Entry(value, isRef)), (Conditional<Entry>) One.NULL);
+//        }
     
     }
     
     private void pushTrueEntry(final Conditional<Entry> value) {
-        resize();
+        //resize();
         slots[++size] = value;
     }
     
     @Override
-    public void pushEntry(final FeatureExpr ctx, final Conditional<Entry> value) {
+    public void pushEntry(FeatureExpr ctx, Conditional<Entry> value) {
+        //if(ctx.isContradiction()) return;
+        //if(ctx.isTautology()) {
         resize();
-        if (ctx.equivalentTo(stackCTX)) {
+        value = value.simplify(ctx.and(stackCTX));
+        if(ctx.equivalentTo(stackCTX)) {
             pushTrueEntry(value);
             return;
         }
+        if(size == -1) {
+            slots[++size] = ChoiceFactory.create(ctx, value, (Conditional<Entry>) One.NULL);
+            return;
+        }
+        
+        FeatureExpr topNull = slots[size].getFeatureExpr(null);
+        if(topNull.isContradiction()) {
+            slots[++size] = ChoiceFactory.create(ctx, value, (Conditional<Entry>) One.NULL);
+            return;
+        }
+        
+        FeatureExpr valueNull = value.getFeatureExpr(null).and(ctx).orNot(ctx);
+        if(valueNull.or(topNull).isTautology()) {
+        	slots[size] = ChoiceFactory.create(ctx, value, slots[size]).simplify();
+        	return;
+        }
+        		
         slots[++size] = ChoiceFactory.create(ctx, value, (Conditional<Entry>) One.NULL);
     }
     
@@ -329,12 +379,21 @@ class VStack implements IVStack {
     @SuppressWarnings("unchecked")
     @Override
     public void push(final FeatureExpr ctx, final Object value, final boolean isRef) {
+        //printStack("push " + stackCTX + "\n" + ctx + " " + value);
+
+        //if(ctx.isContradiction()) { System.out.println("push FALSE"); return; }
+        //printStack("ha");
+        //if(ctx.isContradiction()) return;
         resize();
         if (value instanceof One) {
             push(ctx, ((One) value).getValue(), isRef);
         } else if (value instanceof Conditional) {
             flag = false;
             Conditional<Object> vs = ((Conditional<Object>) value).simplify(ctx);
+            if(vs instanceof One) {
+                push(ctx, vs.getValue(), isRef);
+                return;
+            }
             Conditional<Entry> tmp = vs.mapfr(null, new BiFunction<FeatureExpr, Object, Conditional<Entry>>() {
     
                 @Override
@@ -460,8 +519,15 @@ class VStack implements IVStack {
     */
     @Override
     public void pop(FeatureExpr ctx, int n) {
+        //if(ctx.isContradiction()) System.out.println("pop FALSE");
+        //printStack("pop " + ctx + " " + n);
+
         simpleCleanup();
+        
+        if(ctx.equivalentTo(stackCTX)) ctx = FeatureExprFactory.True();
+        
         for (int i = 0; i < n; i++) {
+        	//printStack("pop " + ctx + " " + n);
             popHelper(ctx);
             cleanup();
         }
@@ -539,13 +605,17 @@ class VStack implements IVStack {
             if (!tmp[j][0].equals(One.NULL))
                 ret = ChoiceFactory.create(fs[j], ret, tmp[j][0].simplify(fs[j].not()));
         }
-        return ret.simplify(ctx);
+        return ret.simplify(ctx.and(stackCTX));
     }
     
   
     @Override
     public Conditional<Entry> popEntry(FeatureExpr ctx, boolean copyRef) {
         simpleCleanup();
+        
+        if(ctx.equivalentTo(stackCTX)) ctx = FeatureExprFactory.True();
+
+        
         Conditional<Entry> res = popEntryHelper(ctx, size);
         if(copyRef) return res;
         
@@ -561,6 +631,10 @@ class VStack implements IVStack {
     public <T> Conditional<T> pop(FeatureExpr ctx, Type t) {
         Conditional<T> res = null;
         simpleCleanup();
+        //printStack("pop " + ctx);
+        if(ctx.equivalentTo(stackCTX)) ctx = FeatureExprFactory.True();
+
+        
         switch (t) {
         case INT:
             res = (Conditional<T>) popInteger(ctx);
@@ -619,9 +693,11 @@ class VStack implements IVStack {
     
     
     private Conditional<Entry> peek(final FeatureExpr ctx, int offset) {
+        
         if (size < offset) {
             return new One<>(new Entry(-1, false));
         }
+        
     
         for (int i = 0; i <= offset && i <= size; ++i) {
             fillholes(ctx, size - i);
@@ -638,20 +714,25 @@ class VStack implements IVStack {
         for (int i = 0; i <= offset && i <= size; ++i) {
             fillholes(ctx, size - i);
         }
-    
-        return slots[size - offset].simplify(ctx).map(new Function<Entry, Integer>() {
-        public Integer apply(Entry e) {
-            if (e == null)
-                return null;
-            return e.value;
-        }
-        }).simplify();
+        Conditional<Integer> res = slots[size - offset].simplify(ctx).map(new Function<Entry, Integer>() {
+            public Integer apply(Entry e) {
+                if (e == null)
+                    return null;
+                return e.value;
+            }
+            }).simplifyValues();
+        //printStack("peek " + ctx + " " + offset + " " + res);
+        return res;
         
     }
     
     @Override
     public <T> Conditional<T> peek(FeatureExpr ctx, int offset, Type t) {
         cleanup();
+        //printStack("peek " + ctx + " " + offset);
+        //if(ctx.equivalentTo(stackCTX)) ctx = FeatureExprFactory.True();
+
+        
         switch (t) {
         case DOUBLE:
             final Conditional<Integer> tmp = peekValue(ctx, offset);
@@ -679,16 +760,11 @@ class VStack implements IVStack {
         case LONG:
             final Conditional<Integer> tmp2 = peekValue(ctx, offset);
             final Conditional<Integer> tmp3 = peekValue(ctx, offset + 1);
-            Conditional<T> res2 = tmp2.mapfr(ctx, new BiFunction<FeatureExpr, Integer, Conditional<T>>() {
-            public Conditional<T> apply(FeatureExpr c, final Integer x) {
-                return tmp3.simplify(c).map(new Function<Integer, T>() {
-                // return tmp3.map(new Function<Integer, T>(){
-                public T apply(Integer y) {
-                    return (T) (Long) Types.intsToLong(x, y);
+            Conditional<T> res2 = (Conditional<T>) tmp2.fastApply(tmp3, new BiFunction<Integer, Integer, Conditional<Long>>() {
+                public Conditional<Long> apply(Integer x, Integer y) {
+                    return new One<>(Types.intsToLong(x, y));
                 }
                 }).simplify();
-            }
-            }).simplify();
             return res2;
     
         default:
@@ -701,7 +777,7 @@ class VStack implements IVStack {
     public int[] getSlots(FeatureExpr ctx) {
         int sz = topSize(ctx, size).getValue();
         if(sz == -1) return new int[0];
-        int[] clone = new int[sz];
+        int[] clone = new int[sz + 1];
         for(int i = sz; i >=0; i--) {
             clone[i] = peekValue(ctx, sz - i).getValue();
         }
@@ -749,6 +825,7 @@ class VStack implements IVStack {
     }
     
     public void set(FeatureExpr ctx, final int offset, final int value, final boolean isRef) {
+        System.out.print("set");
         fillholes(ctx);
         new One<Integer>(offset).mapfr(ctx, new VoidBiFunction<FeatureExpr, Integer>() {
             public void apply(FeatureExpr c, Integer offset) {
@@ -774,6 +851,7 @@ class VStack implements IVStack {
     }
     @Override
     public void setTop(final FeatureExpr ctx, final int i) {
+        System.out.print("setTop");
         fillholes(ctx);
         slots[i] = slots[i].mapfr(ctx, new BiFunction<FeatureExpr, Entry, Conditional<Entry>>() {
             public Conditional<Entry> apply(FeatureExpr f, Entry e) {
@@ -877,6 +955,7 @@ class VStack implements IVStack {
      * .. A => .. A A
      */
     public void dup(FeatureExpr ctx) {
+        cleanup();
         fillholes(ctx, size);
         Conditional<Entry> a = slots[size].simplify(ctx);
         pushEntry(ctx, a);

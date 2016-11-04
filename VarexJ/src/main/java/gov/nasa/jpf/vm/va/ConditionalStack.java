@@ -75,6 +75,7 @@ public class ConditionalStack implements IVStack {
 	@Override
 	@SuppressWarnings("unchecked")
 	public void push(final FeatureExpr ctx, final Object value, final boolean isRef) {
+	    //System.out.println("push " + ctx + " " + value + " " + isRef);
 		if (value instanceof Conditional) {
 			((Conditional<Object>) value).mapf(ctx, new VoidBiFunction<FeatureExpr, Object>() {
 
@@ -175,6 +176,7 @@ public class ConditionalStack implements IVStack {
 		return result;
 	}
 	public <T> Conditional<T> pop(final FeatureExpr ctx, final Type t) {
+	    //System.out.println("pop "+ ctx);
 		Conditional<T> result = stack.simplify(ctx).mapf(ctx, new BiFunction<FeatureExpr, Stack, Conditional<T>>() {
 
 			@SuppressWarnings("unchecked")

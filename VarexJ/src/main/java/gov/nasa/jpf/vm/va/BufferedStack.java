@@ -12,8 +12,10 @@ import de.fosd.typechef.featureexpr.FeatureExpr;
 import de.fosd.typechef.featureexpr.FeatureExprFactory;
 import gov.nasa.jpf.vm.Types;
 import gov.nasa.jpf.vm.va.IStackHandler.Type;
-
-
+import cmu.conditional.BiFunction;
+import cmu.conditional.ChoiceFactory;
+import gov.nasa.jpf.vm.MJIEnv;
+import gov.nasa.jpf.vm.Types;
 
 public class BufferedStack implements IVStack {
     IVStack stack;
@@ -27,6 +29,22 @@ public class BufferedStack implements IVStack {
 		throw new RuntimeException();
 
 	}
+	@Override
+	public String toString() {
+		StringBuilder string = new StringBuilder();
+		string.append(stack);
+
+		string.append("\nBuffered: " + bufferCTX);
+		int i = buffer.size();
+		for (Tuple e : buffer) {
+			string.append('\n');
+			string.append(--i);
+			string.append(':');
+			string.append(e);
+		}
+
+		return string.toString();
+	}
 	public BufferedStack(int nOperands ) {
 	
 		maxStackSize = nOperands;
@@ -34,16 +52,17 @@ public class BufferedStack implements IVStack {
 		stack.setCtx(FeatureExprFactory.True());
 	}
 	
+	public BufferedStack() {
+		this.maxStackSize = 0;
+	}
 	@Override
 	public int getStackWidth() {
-		// TODO Auto-generated method stub
-		return 0;
+		return stack.getStackWidth();
 	}
 
 	@Override
 	public FeatureExpr getCtx() {
-		// TODO Auto-generated method stub
-		return null;
+		return stack.getCtx();
 	}
 
 	@Override
@@ -54,32 +73,90 @@ public class BufferedStack implements IVStack {
 
 	@Override
 	public boolean hasAnyRef(FeatureExpr ctx) {
-		// TODO Auto-generated method stub
-		return false;
+		if (!buffer.isEmpty()) {
+			if (bufferCTX.equivalentTo(ctx)) {
+				for (Tuple entry : buffer) {
+					if (entry.isRef) {
+						return true;
+					}
+				}
+				return stack.hasAnyRef(ctx);
+			}
+			debufferAll();
+		}
+		return stack.hasAnyRef(ctx);
 	}
-
+	
+	//TODO: modify
 	@Override
 	public boolean isRefLocal(FeatureExpr ctx, int index) {
-		// TODO Auto-generated method stub
-		return false;
+		debufferAll();
+		return stack.isRefLocal(ctx, index);
 	}
 
 	@Override
 	public Conditional<Integer> getTop() {
-		// TODO Auto-generated method stub
-		return null;
+		if (!buffer.isEmpty()) {
+			int size = -1;
+			for (Tuple entry : buffer) {
+				Conditional value = entry.value;
+				if (value.getValue(true) instanceof Integer) {
+					size++;
+					continue;
+				}
+				if (value.getValue(true) instanceof Float) {
+					size++;
+					continue;
+				}
+				if (value.getValue(true) instanceof Long) {
+					size += 2;
+					continue;
+				}
+				if (value.getValue(true) instanceof Double) {
+					size += 2;
+					continue;
+				}
+			}
+
+			Conditional<Integer> stackTop = stack.getTop();
+			if (stackTop.equals(One.valueOf(-1))) {
+				if (Conditional.isTautology(bufferCTX)) {
+					return One.valueOf(size);
+				}
+				return ChoiceFactory.create(bufferCTX, new One<>(size), new One<>(-1));
+			}
+			final int finalSize = size;
+			return stackTop.mapf(FeatureExprFactory.True(), new BiFunction<FeatureExpr, Integer, Conditional<Integer>>() {
+
+				@Override
+				public Conditional<Integer> apply(FeatureExpr ctx, Integer y) {
+					FeatureExpr context = bufferCTX.and(ctx);
+					if (Conditional.isContradiction(context)) {
+						return One.valueOf(y);
+					}
+					return ChoiceFactory.create(context, new One<>(y + finalSize + 1), new One<>(y));
+				}
+
+			}).simplify();
+		}
+		return stack.getTop();
 	}
 
 	@Override
 	public int[] getSlots(FeatureExpr ctx) {
-		// TODO Auto-generated method stub
-		return null;
+		debufferAll();
+		return stack.getSlots(ctx);
 	}
 
 	@Override
 	public Set<Integer> getAllReferences() {
-		// TODO Auto-generated method stub
-		return null;
+		Set<Integer> references = stack.getAllReferences();
+		for (Tuple entry : buffer) {
+			if (entry.isRef) {
+				references.addAll(entry.value.toList());
+			}
+		}
+		return references;
 	}
 
 	@Override
@@ -90,8 +167,15 @@ public class BufferedStack implements IVStack {
 
 	@Override
 	public void clear(FeatureExpr ctx) {
-		// TODO Auto-generated method stub
-
+		if (!buffer.isEmpty()) {
+			if (bufferCTX.equivalentTo(ctx)) {
+				buffer.clear();
+				bufferCTX = FeatureExprFactory.True();
+			} else {
+				debufferAll();
+			}
+		}
+		stack.clear(ctx);
 	}
 	
 	
@@ -164,6 +248,9 @@ public class BufferedStack implements IVStack {
 			return true;
 		}
 	}
+	
+	
+	
 	@Override
 	public void push(FeatureExpr ctx, Object value, boolean isRef) {
 		if (!(value instanceof Conditional)) {
@@ -370,17 +457,231 @@ public class BufferedStack implements IVStack {
 		// TODO Auto-generated method stub
 
 	}
+	
+	
+	
 
+	
+	public Conditional<Integer> peek(FeatureExpr ctx, final int offset) {
+		if (!buffer.isEmpty()) {
+			if (getBufferSize() > offset && bufferCTX.equivalentTo(ctx)) {
+				int pointer = offset;
+				int n = 0;
+				while (n <= pointer) {
+					Conditional value = buffer.get(n).value;
+					Object type = value.getValue(true);
+					if (type instanceof Integer) {
+						if (n == offset) {
+							return value;
+						}
+						n++;
+						continue;
+					}
+					if (type instanceof Float) {
+						if (n == offset) {
+							return value.map(new Function<Float, Integer>() {
+
+								@Override
+								public Integer apply(Float x) {
+									return Types.floatToInt(x.floatValue());
+								}
+
+							});
+						}
+						n++;
+						continue;
+					}
+					if (type instanceof Double || type instanceof Long) {
+						if (n - pointer > 1) {
+							n++;
+							pointer--;
+							continue;
+						} else {
+							debufferAll();
+							return stack.peek(ctx, offset, Type.DOUBLE);
+						}
+					}
+					if (type instanceof Byte) {
+						if (n == offset) {
+							return value.map(new Function<Byte, Integer>() {
+
+								@Override
+								public Integer apply(Byte x) {
+									return (int)x.byteValue();
+								}
+								
+							});
+						}
+						n++;
+						continue;
+					}
+					if (type instanceof Short) {
+						if (n == offset) {
+							return value.map(new Function<Short, Integer>() {
+
+								@Override
+								public Integer apply(Short x) {
+									return (int)x;
+								}
+								
+							});
+						}
+						n++;
+						continue;
+					}
+					throw new RuntimeException("type " + type.getClass() + " missed");
+					
+				}
+			}
+			debufferAll();
+		}
+		return stack.peek(ctx, offset, Type.INT);
+	}
+     
+	private int getBufferSize() {
+		int size = 0;
+		for (Tuple entry : buffer) {
+			Object type = entry.value.getValue(true);
+			if (type instanceof Integer ||
+				type instanceof Float ||
+				type instanceof Byte ||
+				type instanceof Short) {
+				size++;
+			} else {
+				size += 2;
+			}
+		}
+		
+		
+		return size;
+	}
 	@Override
-	public <T> Conditional<T> peek(FeatureExpr ctx, int offset, Type t) {
-		// TODO Auto-generated method stub
-		return null;
+	public <T> Conditional<T> peek(FeatureExpr ctx, final int offset, Type t) {
+		if (!buffer.isEmpty()) {
+			if (getBufferSize() > offset && bufferCTX.equivalentTo(ctx)) {
+				int pointer = offset;
+				int n = 0;
+				while (n <= pointer) {
+					Conditional value = buffer.get(n).value;
+					Object type = value.getValue(true);
+					if (type instanceof Integer) {
+						if (n == offset) {
+							switch (t) {
+							
+							case LONG:
+								if (buffer.size() > n + 1) { 
+									final Conditional value2 = buffer.get(n + 1).value;
+									return value.mapr(new Function<Integer, Conditional<Long>>() {
+	
+										@Override
+										public Conditional<Long> apply(final Integer x1) {
+											return value2.map(new Function<Integer, Long>() {
+	
+												@Override
+												public Long apply(Integer x2) {
+													return Types.intsToLong(x1, x2);
+												}
+	
+											});
+										}
+	
+									});
+								} else {
+									break;
+								}
+							default:
+								throw new RuntimeException("type " + type.getClass() + " missed" + t);
+							}
+						}
+						n++;
+						continue;
+					}
+					if (type instanceof Float) {
+						if (n == offset) {
+							switch (t) {
+							case FLOAT:
+								return value;
+							case INT:
+								return value.map(new Function<Float, Integer>() {
+
+									@Override
+									public Integer apply(Float x) {
+										return Types.floatToInt(x.floatValue());
+									}
+
+								});
+							default:
+								break;
+							}
+							
+						}
+						n++;
+						continue;
+					}
+					if (type instanceof Double || type instanceof Long) {
+						if (n - pointer > 1) {
+							n++;
+							pointer--;
+							continue;
+						} else {
+							debufferAll();
+							return stack.peek(ctx, offset, t);
+						}
+					}
+					if (type instanceof Byte) {
+						if (n == offset) {
+							return value.map(new Function<Byte, Integer>() {
+
+								@Override
+								public Integer apply(Byte x) {
+									return (int)x.byteValue();
+								}
+								
+							});
+						}
+						n++;
+						continue;
+					}
+					if (type instanceof Short) {
+						if (n == offset) {
+							return value.map(new Function<Short, Integer>() {
+
+								@Override
+								public Integer apply(Short x) {
+									return (int)x;
+								}
+								
+							});
+						}
+						n++;
+						continue;
+					}
+					throw new RuntimeException("type " + type.getClass() + " missed");
+					
+				}
+			}
+			debufferAll();
+		}
+		return stack.peek(ctx, offset, t);
 	}
 
 	@Override
-	public Conditional<Entry> popEntry(FeatureExpr ctx, boolean copyRef) {
-		// TODO Auto-generated method stub
-		return null;
+	public Conditional<Entry> popEntry(FeatureExpr ctx, final boolean copyRef) {
+		if (!buffer.isEmpty()) {
+			if (bufferCTX.equivalentTo(ctx)) {
+				final Object value = buffer.peek().value.getValue(true);
+				final Tuple v = buffer.pop();
+				return v.value.map(new Function<Integer, Entry>(){
+					public Entry apply(Integer value) {
+						if(copyRef) return new Entry(value, v.isRef);
+						return new Entry(value, false);
+					}
+				});
+			} else {
+				debufferAll();
+			}
+		}
+		return stack.popEntry(ctx, copyRef);
 	}
 
 	
@@ -389,14 +690,23 @@ public class BufferedStack implements IVStack {
 
 	@Override
 	public boolean isRef(FeatureExpr ctx, int offset) {
-		// TODO Auto-generated method stub
-		return false;
+		if (!buffer.isEmpty()) {
+			if (bufferCTX.equivalentTo(ctx)) {
+				if (buffer.size() > offset) {
+					return buffer.get(offset).isRef;
+				} else {
+					return stack.isRef(ctx, offset - buffer.size());
+				}
+			}
+			debufferAll();
+		}
+		return stack.isRef(ctx, offset);
 	}
 
 	@Override
 	public void set(FeatureExpr ctx, int offset, int value, boolean isRef) {
-		// TODO Auto-generated method stub
-
+		debufferAll();
+		stack.set(ctx, offset, value, isRef);
 	}
 
 	@Override
@@ -407,60 +717,187 @@ public class BufferedStack implements IVStack {
 
 	@Override
 	public IVStack clone() {
-		// TODO Auto-generated method stub
-		return null;
+		BufferedStack clone = new BufferedStack();
+		clone.maxStackSize = maxStackSize;
+		clone.buffer = (LinkedList<Tuple>) buffer.clone();
+		clone.bufferCTX = bufferCTX;
+		clone.stack = this.stack.clone();
+		clone.stackCTX = this.stackCTX;
+		return clone;
 	}
+	
+    public boolean equals(Object o) {
+        if (o == null) {
+            return false;
+        }
+        if(!(o instanceof BufferedStack)) {
+        	return false;
+        }
+        if(this.stack instanceof ConditionalStack && ((BufferedStack)o).stack  instanceof ConditionalStack) {
+        	((BufferedStack)o).debufferAll();
+            this.debufferAll();
+            return stack.equals(((BufferedStack)o).stack);
+        }
+        if(this.stack instanceof VStack && ((BufferedStack)o).stack  instanceof VStack) {
+        	((BufferedStack)o).debufferAll();
+            this.debufferAll();
+            return stack.equals(((BufferedStack)o).stack);
+        }
+        return false;
+    }
 
-	@Override
-	public Conditional<Stack> getStack() {
-		// TODO Auto-generated method stub
-		return null;
-	}
 
-	@Override
-	public void dup_x1(FeatureExpr ctx) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void dup2_x2(FeatureExpr ctx) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void dup2_x1(FeatureExpr ctx) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void dup2(FeatureExpr ctx) {
-		// TODO Auto-generated method stub
-
-	}
-
+	// A => A A
 	@Override
 	public void dup(FeatureExpr ctx) {
-		// TODO Auto-generated method stub
+		if (!buffer.isEmpty()) {
+			if (bufferCTX.equivalentTo(ctx)) {
+				Tuple peek = buffer.peek();
+				if (peek.value.getValue(true) instanceof Integer) {
+					buffer.push(peek);
+					return;
+				}
+				debufferAll();
+			} else {
+				debufferAll();
+			}
+		}
 
+		stack.dup(ctx);
 	}
 
+	// A B => A B A B
 	@Override
-	public void dup_x2(FeatureExpr ctx) {
-		// TODO Auto-generated method stub
-
+	public void dup2(FeatureExpr ctx) {
+		if (!buffer.isEmpty()) {
+			if (buffer.size() >= 2 && bufferCTX.equivalentTo(ctx)) {
+				if (buffer.peek().value.getValue(true) instanceof Integer &&
+						buffer.get(1).value.getValue(true) instanceof Integer) {
+					buffer.push(buffer.get(1));
+					buffer.push(buffer.get(1));
+					return;
+				}
+			}
+			debufferAll();
+		}
+		stack.dup2(ctx);
 	}
 
+	// A B => B A
 	@Override
 	public void swap(FeatureExpr ctx) {
-		// TODO Auto-generated method stub
-
+		if (!buffer.isEmpty()) {
+			if (buffer.size() >= 2 && bufferCTX.equivalentTo(ctx)) {
+				if (buffer.peek().value.getValue(true) instanceof Integer &&
+					buffer.get(1).value.getValue(true) instanceof Integer) {
+					buffer.add(1, buffer.pop());
+					return;
+				}
+			}
+			debufferAll();
+		}
+		stack.swap(ctx);
 	}
+
+	// A B C => .. B C A B C
+	@Override
+	public void dup2_x1(FeatureExpr ctx) {
+		if (!buffer.isEmpty()) {
+			if (buffer.size() >= 3 && bufferCTX.equivalentTo(ctx)) {
+				if (buffer.peek().value.getValue(true) instanceof Integer && buffer.get(1).value.getValue(true) instanceof Integer && buffer.get(2).value.getValue(true) instanceof Integer) {
+					buffer.add(3, buffer.get(1));
+					buffer.add(3, buffer.peek());
+					return;
+				}
+			}
+			debufferAll();
+		}
+		stack.dup2_x1(ctx);
+	}
+
+	// A B C D => .. C D A B C D
+	@Override
+	public void dup2_x2(FeatureExpr ctx) {
+		if (!buffer.isEmpty()) {
+			if (buffer.size() >= 4 && bufferCTX.equivalentTo(ctx)) {
+				if (buffer.peek().value.getValue(true) instanceof Integer && buffer.get(1).value.getValue(true) instanceof Integer && buffer.get(2).value.getValue(true) instanceof Integer
+						&& buffer.get(3).value.getValue(true) instanceof Integer) {
+					buffer.add(4, buffer.get(1));
+					buffer.add(4, buffer.peek());
+					return;
+				}
+			}
+			debufferAll();
+		}
+		stack.dup2_x2(ctx);
+	}
+
+	// A B => .. B A B
+	@Override
+	public void dup_x1(FeatureExpr ctx) {
+		if (!buffer.isEmpty()) {
+			if (buffer.size() >= 2) {
+				if (bufferCTX.equivalentTo(ctx)) {
+					if (buffer.peek().value.getValue(true) instanceof Integer && buffer.get(1).value.getValue(true) instanceof Integer) {
+						buffer.add(2, buffer.peek());
+						return;
+					}
+				}
+			}
+			debufferAll();
+		}
+		stack.dup_x1(ctx);
+	}
+
+	// A B C => .. C A B C
+	@Override
+	public void dup_x2(FeatureExpr ctx) {
+		if (!buffer.isEmpty()) {
+			if (buffer.size() >= 3 && bufferCTX.equivalentTo(ctx)) {
+				buffer.add(3, buffer.peek());
+				return;
+			} else {
+				debufferAll();
+			}
+		}
+		stack.dup_x2(ctx);
+	}
+
+
   @Override
   public void pushEntry(FeatureExpr ctx, Conditional<Entry> value) {
-    // TODO Auto-generated method stub
+	    Conditional<Boolean> ref  = value.map(new Function<Entry, Boolean>() {
+	    	public Boolean apply(Entry value) {
+	    		return value.isRef;
+	    	}
+	    }).simplify(ctx);
+	    
+	    Conditional<Integer> val = value.map(new Function<Entry, Integer>() {
+	    	public Integer apply(Entry value) {
+	    		return value.value;
+	    	}
+	    }).simplify(ctx);
+	    
+	    if(!(ref instanceof One)) {
+	    	debufferAll();
+	    	stack.pushEntry(ctx, value);
+	    }
+	    
+		if (buffer.isEmpty()) {
+			bufferCTX = ctx;
+			addToBuffer(val, ref.getValue());
+		} else if (ctx.equivalentTo(bufferCTX)) {
+			addToBuffer(val, ref.getValue());
+		} else {
+			debufferAll();
+			bufferCTX = ctx;
+			addToBuffer(val, ref.getValue());
+		}
   }
+@Override
+public Conditional<Stack> getStack() {
+	// TODO Auto-generated method stub
+	return null;
+}
 
 }

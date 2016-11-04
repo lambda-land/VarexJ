@@ -221,15 +221,15 @@ public class Main {
       IVStack vstack = new VStack(stackSize);
       IVStack vstack2 = new VStack(stackSize);
       IVStack vstack3 = new VStack(stackSize);
-  /*
+  
       IVStack bstack = new ConditionalStack(stackSize);
       IVStack bstack2 = new ConditionalStack(stackSize);
       IVStack bstack3 = new ConditionalStack(stackSize);
-  */
+  
        
-       IVStack bstack = new BufferedStack(stackSize); 
-       IVStack bstack2 = new  BufferedStack(stackSize); 
-       IVStack bstack3 = new BufferedStack(stackSize);
+//       IVStack bstack = new BufferedStack(stackSize); 
+//       IVStack bstack2 = new  BufferedStack(stackSize); 
+//       IVStack bstack3 = new BufferedStack(stackSize);
        
   
       FeatureExpr fe = randomFEComlexity(options, feComplexity);
@@ -318,7 +318,7 @@ public class Main {
           
       }
 
-      System.out.println("bpeek");
+      System.out.println("Conditional<Stack>");
       ans[0] = testStackWith(bstack, operationsNum, fes, operations, conditionalValues);
       ans[0] = Math.min(ans[0], testStackWith(bstack3, operationsNum, fes, operations, conditionalValues));
       System.out.println("bstack " + ans[0]);
@@ -327,8 +327,8 @@ public class Main {
       bstack2 = null;
       bstack3 = null;
   
-      //activateTreeVStack();
-      System.out.println("vpeek");
+     
+      System.out.println("VStack");
       ans[1] = testStackWith(vstack, operationsNum, fes, operations, conditionalValues);
       ans[1] = Math.min(ans[1], testStackWith(vstack3, operationsNum, fes, operations, conditionalValues));
       System.out.println("vstack " + ans[1]);
@@ -368,7 +368,7 @@ public class Main {
       double ratio = 0.1;
       int conditionalSize = 1;
       int operationsNum = 200;
-      double possibility = 0.9;
+      double possibility = 1;
    //0.85
       //ChoiceFactory.activateTreeChoice();
   

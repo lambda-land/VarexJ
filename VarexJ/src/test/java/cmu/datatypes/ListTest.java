@@ -8,7 +8,7 @@ import gov.nasa.jpf.annotation.Conditional;
 import gov.nasa.jpf.util.test.TestJPF;
 
 public class ListTest extends TestJPF {
-	static String[] JPF_CONFIGURATION = {/*"+interaction=interaction",*/"+choice=MapChoice", "+search.class= .search.RandomSearch", "+invocation=true"};
+	static String[] JPF_CONFIGURATION = {/*"+interaction=interaction",*/"+choice=MapChoice", "+factory=BDD", "+search.class= .search.RandomSearch", "+invocation=true"};
 	@Conditional static boolean a1 = true;
 	@Conditional static boolean a2 = true;
 	@Conditional static boolean a3 = true;
@@ -47,8 +47,16 @@ public class ListTest extends TestJPF {
 			LinkedList<Character> list = new LinkedList<>();
 			if (a1) list = new LinkedList<>();
 			list.add('0');
+			System.out.println(list);
 			if (a1) {list.add('c');}else{list.add('c');}
+			System.out.println(list);
+			System.out.println(a2);
+			try {
 			if (a2) {list.add('c');}else{list.add('c');}
+			System.out.println(list);
+			} catch(Exception e) {
+				System.out.println(e);
+			}
 			if (a3) {list.add('c');}else{list.add('c');}
 			if (a4) {list.add('c');}else{list.add('c');}
 			if (a5) {list.add('c');}else{list.add('c');}
@@ -62,6 +70,8 @@ public class ListTest extends TestJPF {
 			if (a13) {list.add('c');}else{list.add('c');}
 			if (a14) {list.add('c');}else{list.add('c');}
 			if (a15) {list.add('c');}else{list.add('c');}
+			System.out.println(list.size());
+
 			if (a16) {list.add('c');}else{list.add('c');}
 			if (a17) {list.add('c');}else{list.add('c');}
 			if (a18) {list.add('c');}else{list.add('c');}
@@ -77,7 +87,7 @@ public class ListTest extends TestJPF {
 			if (a28) {list.add('c');}else{list.add('c');}
 			if (a29) {list.add('c');}else{list.add('c');}
 			if (a30) {list.add('c');}else{list.add('c');}
-			list.removeFirst();
+			//list.removeFirst();
 			System.out.println(list.size());
 			for (Character e : list) {
 				System.out.println(e);
@@ -89,7 +99,7 @@ public class ListTest extends TestJPF {
 		}
 	}
 	
-	@Test
+	//@Test
 	public void invocationTest() throws Exception {
 		if (verifyNoPropertyViolation(JPF_CONFIGURATION)) {
 			C c = new C(0);

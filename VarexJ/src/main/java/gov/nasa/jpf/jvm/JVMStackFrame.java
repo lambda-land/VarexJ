@@ -43,7 +43,7 @@ public class JVMStackFrame extends StackFrame {
 	 * creates callerSlots dummy Stackframe for testing of operand/local
 	 * operations NOTE - TESTING ONLY! this does not have callerSlots MethodInfo
 	 */
-	public JVMStackFrame(int nLocals, int nOperands) {
+	protected JVMStackFrame(int nLocals, int nOperands) {
 		super(nLocals, nOperands);
 	}
 

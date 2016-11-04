@@ -49,11 +49,13 @@ public class Store {
 		try (PrintWriter writer = new PrintWriter("/home/meng/stacklog.csv", "UTF-8")){
 			writer.print(';');
 			for (SHFactory factory : StackHandlerFactory.SHFactory.values()) {
+				if(factory ==  StackHandlerFactory.SHFactory.Default || factory ==  StackHandlerFactory.SHFactory.Hybid) continue;
 				writer.print(factory);
 				writer.print(';');
 			}
 	
 			for (SHFactory factory : StackHandlerFactory.SHFactory.values()) {
+				if(factory ==  StackHandlerFactory.SHFactory.Default || factory ==  StackHandlerFactory.SHFactory.Hybid) continue;
 				writer.print("V" + factory);
 				writer.print(';');
 			}
@@ -75,9 +77,27 @@ public class Store {
 				Measurement measurement = new Measurement(entry.get(0).methodName);
 				measures.add(measurement);
 				for (SHFactory factory : StackHandlerFactory.SHFactory.values()) {
+					if(factory ==  StackHandlerFactory.SHFactory.Default || factory ==  StackHandlerFactory.SHFactory.Hybid) continue;
 					StackHandlerFactory.setFactory(factory);
 					IStackHandler checkStack = StackHandlerFactory.createStack2((FeatureExpr) initArgs[0],
 							(int) initArgs[1], (int) initArgs[2]);
+					
+					//pre run
+					for (LogEntry logEntry : entry) {
+						if (logEntry.stackInstruction == null) {
+							// case constructor
+							continue;
+						}
+						try {
+							if (verbose) {
+								System.out.print("invoke: " + logEntry.stackInstruction.getName());
+								System.out.println(" args: " + Arrays.toString(logEntry.args));
+							}
+							logEntry.stackInstruction.invoke(checkStack, logEntry.args);
+						} catch (SecurityException | IllegalAccessException | InvocationTargetException e) {
+							break;
+						}
+					}
 					
 					long start = System.nanoTime();
 					for (LogEntry logEntry : entry) {
@@ -108,9 +128,26 @@ public class Store {
 			    //measurement = new Measurement(entry.get(0).methodName);
 				//measures.add(measurement);
 				for (SHFactory factory : StackHandlerFactory.SHFactory.values()) {
+					if(factory ==  StackHandlerFactory.SHFactory.Default || factory ==  StackHandlerFactory.SHFactory.Hybid) continue;
 					StackHandlerFactory.setFactory(factory);
 					IStackHandler checkStack = StackHandlerFactory.createStack2((FeatureExpr) initArgs[0],
 							(int) initArgs[1], (int) initArgs[2]);
+					//pre run
+					for (LogEntry logEntry : entry) {
+						if (logEntry.stackInstruction == null) {
+							// case constructor
+							continue;
+						}
+						try {
+							if (verbose) {
+								System.out.print("invoke: " + logEntry.stackInstruction.getName());
+								System.out.println(" args: " + Arrays.toString(logEntry.args));
+							}
+							logEntry.stackInstruction.invoke(checkStack, logEntry.args);
+						} catch (SecurityException | IllegalAccessException | InvocationTargetException e) {
+							break;
+						}
+					}
 					
 					long start = System.nanoTime();
 					for (LogEntry logEntry : entry) {
@@ -164,7 +201,7 @@ public class Store {
 	            vhsum += measurement.measurement[6];
 	            vhbsum += measurement.measurement[7];
 	        }
-	        writer.println( dsum + " "+ bsum + " "+ hsum + " "+ hbsum + " "+ vdsum + " " + vbsum + " " + vhsum + " "+ vhbsum);
+	        writer.println( dsum + " "+ bsum + " "+ hsum + " "+ hbsum + "\n" + vdsum + " " + vbsum + " " + vhsum + " "+ vhbsum);
 		} catch (FileNotFoundException | UnsupportedEncodingException e1) {
 			e1.printStackTrace();
 		}
