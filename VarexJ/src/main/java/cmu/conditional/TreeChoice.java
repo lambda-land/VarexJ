@@ -19,14 +19,15 @@ class TreeChoice<T> extends IChoice<T> implements Cloneable {
     protected Conditional<T> thenBranch;
     protected Conditional<T> elseBranch;
     protected FeatureExpr featureExpr;
-    protected int depth;
+    protected FeatureExpr nullExpr;
     
     TreeChoice(FeatureExpr featureExpr, Conditional<T> thenBranch, Conditional<T> elseBranch) {
         super(featureExpr, thenBranch, elseBranch);
         this.featureExpr = featureExpr;
         this.thenBranch = thenBranch;
         this.elseBranch = elseBranch;
-        this.depth = Math.max(thenBranch.depth(), elseBranch.depth()) + 1;
+        //this.depth = Math.max(thenBranch.depth(), elseBranch.depth()) + 1;
+        nullExpr = null;
     }
 
     @Override
@@ -122,7 +123,7 @@ class TreeChoice<T> extends IChoice<T> implements Cloneable {
         final int prime = 31;
         int result = 1;
         result = prime * result + ((elseBranch == null) ? 0 : elseBranch.hashCode());
-        result = prime * result + ((featureExpr == null) ? 0 : featureExpr.hashCode());
+        //result = prime * result + ((featureExpr == null) ? 0 : featureExpr.hashCode());
         result = prime * result + ((thenBranch == null) ? 0 : thenBranch.hashCode());
         return result;
     }
@@ -212,12 +213,32 @@ class TreeChoice<T> extends IChoice<T> implements Cloneable {
     public int size() {
         return thenBranch.size() + elseBranch.size();
     }
-    
+    /*
     @Override
     public int depth() {
         return depth;
     }
+    */
     
+//    private static <T> Conditional<T> buildTreeFromArray(Map.Entry<T, FeatureExpr>[] arr, int l, int r) {
+//      if(r - l == 1) {
+//          return 
+//      }
+//    }
+//    
+//    private static <T> Conditional<T> try2Merge(FeatureExpr featureExpr, Conditional<T> thenBranch, Conditional<T> elseBranch) {
+//      Map<T, FeatureExpr> t = thenBranch.toMap();
+//      Map<T, FeatureExpr> e = elseBranch.toMap();
+//      if(t.keySet().equals(e.keySet())) {
+//          for(T k : t.keySet()) {
+//              FeatureExpr f = t.get(k).and(featureExpr).or(e.get(k).andNot(featureExpr));
+//              t.put(k, f);
+//          }
+//          Map.Entry<T, FeatureExpr>[] arr = (Map.Entry<T, FeatureExpr>[])t.entrySet().toArray();
+//      } else {
+//          return null;
+//      }
+//    }
     public static <T> Conditional<T> createInstance(FeatureExpr featureExpr, Conditional<T> thenBranch, Conditional<T> elseBranch) {
         if(featureExpr.isTautology()) return thenBranch;
         if(featureExpr.isContradiction()) return elseBranch;
@@ -238,7 +259,33 @@ class TreeChoice<T> extends IChoice<T> implements Cloneable {
             }
         }
         
+//        if(thenBranch.hashCode() == elseBranch.hashCode()) {
+//          Conditional<T> res = try2Merge(FeatureExpr featureExpr, Conditional<T> thenBranch, Conditional<T> elseBranch);
+//        }
+        
+        if(thenBranch instanceof TreeChoice && elseBranch instanceof TreeChoice) {
+            if(((TreeChoice) thenBranch).thenBranch.equals(((TreeChoice) elseBranch).thenBranch)
+                    && ((TreeChoice) thenBranch).elseBranch.equals(((TreeChoice) elseBranch).elseBranch)) {
+                return new TreeChoice(featureExpr.and(((TreeChoice) thenBranch).featureExpr).or(((TreeChoice) elseBranch).featureExpr.andNot(featureExpr)),
+                        ((TreeChoice) thenBranch).thenBranch, ((TreeChoice) thenBranch).elseBranch);
+            }
+        }
+        
         return new TreeChoice(featureExpr, thenBranch, elseBranch);
+    }
+    
+    @Override
+    public FeatureExpr getFeatureExpr(final T t) {
+        if(t == null) {
+            if(nullExpr != null) {
+                return nullExpr; 
+            } else {
+                nullExpr = thenBranch.getFeatureExpr(t).and(featureExpr).or(elseBranch.getFeatureExpr(t).andNot(featureExpr));
+                return nullExpr;
+            }
+        }
+        return thenBranch.getFeatureExpr(t).and(featureExpr).or(elseBranch.getFeatureExpr(t).andNot(featureExpr));
+        
     }
     
     @Override

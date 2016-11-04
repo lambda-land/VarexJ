@@ -508,12 +508,16 @@ public class StackHandler implements Cloneable, IStackHandler {
       }
       slots[i++] = l.simplify(ctx).getValue(true).value;
     }
-    int[] stackSlots = new int[length - locals.length];
+    int[] stackSlots;
     stackSlots = stack.getSlots(ctx);
     if(stackSlots.length == 0) return slots;
     int j = 0; 
-    while(i < length && j < length - locals.length) {
+    while(i < length && j < stackSlots.length) {
       slots[i++] = stackSlots[j++];
+    }
+    
+    while(i < length) {
+        slots[i++] = MJIEnv.NULL;
     }
 
     return slots;
