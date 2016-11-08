@@ -35,8 +35,8 @@ public class StackHandlerFactory {
 		}
 	}
 	
-	//static Factory f = new HybridStackHandlerFactory();
-	static Factory f = new DefaultStackHandlerFactory();
+	static Factory f = new HybridStackHandlerFactory();
+	//static Factory f = new DefaultStackHandlerFactory();
 	
 	public static Factory getCurrent() {
 		return f;
