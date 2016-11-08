@@ -49,13 +49,16 @@ public class Store {
 		try (PrintWriter writer = new PrintWriter("/home/meng/stacklog.csv", "UTF-8")){
 			writer.print(';');
 			for (SHFactory factory : StackHandlerFactory.SHFactory.values()) {
-				if(factory ==  StackHandlerFactory.SHFactory.Default || factory ==  StackHandlerFactory.SHFactory.Hybid) continue;
+			   // if(factory ==  StackHandlerFactory.SHFactory.Default) continue;
+
+               // if(factory ==  StackHandlerFactory.SHFactory.Default || factory ==  StackHandlerFactory.SHFactory.Hybid || factory ==  StackHandlerFactory.SHFactory.Buffered) continue;
 				writer.print(factory);
 				writer.print(';');
 			}
 	
 			for (SHFactory factory : StackHandlerFactory.SHFactory.values()) {
-				if(factory ==  StackHandlerFactory.SHFactory.Default || factory ==  StackHandlerFactory.SHFactory.Hybid) continue;
+		        //if(factory ==  StackHandlerFactory.SHFactory.Default) continue;
+			    //if(factory ==  StackHandlerFactory.SHFactory.Default || factory ==  StackHandlerFactory.SHFactory.Hybid || factory ==  StackHandlerFactory.SHFactory.Buffered) continue;
 				writer.print("V" + factory);
 				writer.print(';');
 			}
@@ -77,7 +80,8 @@ public class Store {
 				Measurement measurement = new Measurement(entry.get(0).methodName);
 				measures.add(measurement);
 				for (SHFactory factory : StackHandlerFactory.SHFactory.values()) {
-					if(factory ==  StackHandlerFactory.SHFactory.Default || factory ==  StackHandlerFactory.SHFactory.Hybid) continue;
+				     //if(factory ==  StackHandlerFactory.SHFactory.Default) continue;
+				    //if(factory ==  StackHandlerFactory.SHFactory.Default || factory ==  StackHandlerFactory.SHFactory.Hybid || factory ==  StackHandlerFactory.SHFactory.Buffered) continue;
 					StackHandlerFactory.setFactory(factory);
 					IStackHandler checkStack = StackHandlerFactory.createStack2((FeatureExpr) initArgs[0],
 							(int) initArgs[1], (int) initArgs[2]);
@@ -128,7 +132,8 @@ public class Store {
 			    //measurement = new Measurement(entry.get(0).methodName);
 				//measures.add(measurement);
 				for (SHFactory factory : StackHandlerFactory.SHFactory.values()) {
-					if(factory ==  StackHandlerFactory.SHFactory.Default || factory ==  StackHandlerFactory.SHFactory.Hybid) continue;
+				     //if(factory ==  StackHandlerFactory.SHFactory.Default) continue;
+				    // if(factory ==  StackHandlerFactory.SHFactory.Default || factory ==  StackHandlerFactory.SHFactory.Hybid || factory ==  StackHandlerFactory.SHFactory.Buffered) continue;
 					StackHandlerFactory.setFactory(factory);
 					IStackHandler checkStack = StackHandlerFactory.createStack2((FeatureExpr) initArgs[0],
 							(int) initArgs[1], (int) initArgs[2]);

@@ -92,38 +92,19 @@ public class Main {
   }
   
   public static long testStackWith(IVStack stack, int operationsNum, FeatureExpr[] fes, String[] operations, Conditional<Integer>[] conditionalValues) {
-      
-      
       for (int i = 0; i < operationsNum / 2; i++) stack.push(FeatureExprFactory.True(), new One<>(1), false);
       long start = System.nanoTime();
-      /*
-      for (int i = 0; i < operationsNum; i++) {
-         stack.push(fes[i], conditionalValues[i], false);
-          
-      }
-      
-      for (int i = operationsNum -1; i >= 0; i--) {
-          stack.pop(fes[i], 1);
-      }
-      */
  
       for (int i = 0; i < operationsNum; i++) {
           if (operations[i].equals("push")) {
               stack.push(fes[i], conditionalValues[i], false);
           } else {
-            stack.pop(fes[i], 1);
-           //   System.out.println("width " + stack.getStackWidth());
-              // Conditional<Integer> res = stack.pop(fes[i], Type.INT );
-              // System.out.println("pop " + i + " " + fes[i] + " " + res.simplify(fes[i]));
+              Conditional<Integer> res = stack.pop(fes[i], Type.INT );
           }
-          //System.out.println("" + stack);
+       
       }
       long end = System.nanoTime();
       long duration = (end - start);
-      //if(stack instanceof VStack ) System.out.println(" Vstack ");
-      //else System.out.println(" CStack ");
-     // System.out.println("width" + stack.getStackWidth());
-      
       return duration;
       
   }
@@ -187,7 +168,7 @@ public class Main {
       }
       return pushNum;
   }
-  
+
   public static void GenValues(NonStaticFeature[] options, int pushNum, double ratio, String[] operations,
       Conditional<Integer>[] conditionalValues) {
       LinkedList<Conditional<Integer>> values = new LinkedList<>();
@@ -222,15 +203,14 @@ public class Main {
       IVStack vstack2 = new VStack(stackSize);
       IVStack vstack3 = new VStack(stackSize);
   
-      IVStack bstack = new ConditionalStack(stackSize);
-      IVStack bstack2 = new ConditionalStack(stackSize);
-      IVStack bstack3 = new ConditionalStack(stackSize);
-  
+//      IVStack bstack = new ConditionalStack(stackSize);
+//      IVStack bstack2 = new ConditionalStack(stackSize);
+//      IVStack bstack3 = new ConditionalStack(stackSize);
        
-//       IVStack bstack = new BufferedStack(stackSize); 
-//       IVStack bstack2 = new  BufferedStack(stackSize); 
-//       IVStack bstack3 = new BufferedStack(stackSize);
-       
+       IVStack bstack = new BufferedStack(stackSize); 
+       IVStack bstack2 = new  BufferedStack(stackSize); 
+       IVStack bstack3 = new BufferedStack(stackSize);
+
   
       FeatureExpr fe = randomFEComlexity(options, feComplexity);
       FeatureExpr[] fes = new FeatureExpr[operationsNum];
@@ -318,23 +298,40 @@ public class Main {
           
       }
 
+  
       System.out.println("Conditional<Stack>");
-      ans[0] = testStackWith(bstack, operationsNum, fes, operations, conditionalValues);
-      ans[0] = Math.min(ans[0], testStackWith(bstack3, operationsNum, fes, operations, conditionalValues));
+      ans[0] = Long.MAX_VALUE;
+      ans[1] = Long.MAX_VALUE;
+      for(int i = 0; i < 10; i++) {
+          long minTime = testStackWith(bstack, operationsNum, fes, operations, conditionalValues);
+          bstack.clear(FeatureExprFactory.True());
+          ans[0] = Math.min(minTime, ans[0]);
+      }
+     
       System.out.println("bstack " + ans[0]);
   
-      bstack = null;
-      bstack2 = null;
-      bstack3 = null;
-  
-     
       System.out.println("VStack");
+      
+      for(int i = 0; i < 10; i++) {
+          long minTime = testStackWith(vstack, operationsNum, fes, operations, conditionalValues);
+          vstack.clear(FeatureExprFactory.True());
+          ans[1] = Math.min(minTime, ans[1]);
+      }
+      /*
       ans[1] = testStackWith(vstack, operationsNum, fes, operations, conditionalValues);
+      ans[1] = Math.min(ans[1], testStackWith(vstack2, operationsNum, fes, operations, conditionalValues));
       ans[1] = Math.min(ans[1], testStackWith(vstack3, operationsNum, fes, operations, conditionalValues));
+      */
       System.out.println("vstack " + ans[1]);
       vstack = null;
       vstack2 = null;
       vstack3 = null;
+    
+     
+      bstack = null;
+      bstack2 = null;
+      bstack3 = null;
+  
       
       conditionalValues = null;
       operations = null;
@@ -356,21 +353,17 @@ public class Main {
       
   }
   
-  public static void main(String[] args) {
+  public static void testFeature() {
       System.setProperty("FEATUREEXPR", "BDD");
-      int n = 20, m = 2, nums = 200;
-      NonStaticFeature[] options = getOptions(15);
-      
-    
+      int n = 20, m = 2, nums = 20;
+      NonStaticFeature[] options = getOptions(10);
   
       int stackSize = 200;
       int randomFEComlexity = 1;
       double ratio = 0.1;
       int conditionalSize = 1;
       int operationsNum = 200;
-      double possibility = 1;
-   //0.85
-      //ChoiceFactory.activateTreeChoice();
+      double possibility = 0.9;
   
       double[][] res = new double[n + 1][m + 1];
       long[] ans = new long[2];
@@ -383,18 +376,10 @@ public class Main {
           double bsum = 0, vsum = 0;
   
           for (int j = 0; j < nums; j++) {
-              
-              // System.out.println("No."+ i);
               System.out.print("No."+ i + "nums " + j + " ");
               
-              //test1
-              options = getOptions(i+2);
-              //ans = testBufferedStack(200, options, randomFEComlexity, ratio, conditionalSize, operationsNum/2, 0);
-              
-              //test 2
-              //options = getOptions(5);
-              //ans = testBufferedStack(200, options, randomFEComlexity, ratio, i+1, operationsNum/2, 0);
-              
+              options = getOptions(2 + i);
+              //possibility = (double) (n - i) / n;
               
               ans = testBufferedStack(stackSize, options, randomFEComlexity, ratio, conditionalSize, operationsNum, possibility);
               if (flag) System.out.println(ans[0] + " " + ans[1]);
@@ -414,4 +399,44 @@ public class Main {
       }
   }
   
+  public static void possibilityTest(int stackSize, int randomFEComlexity, double ratio, int conditionalSize, int operationsNum, double possibility) {
+      System.setProperty("FEATUREEXPR", "BDD");
+      int n = 50, m = 2, nums = 20;
+      NonStaticFeature[] options = getOptions(10);
+     
+  
+      double[][] res = new double[n + 1][m + 1];
+      long[] ans = new long[2];
+      double ans_r;
+      for (int i = 0; i <= 10; i++) {
+          System.out.println("No." + i);
+          double bsum = 0, vsum = 0;
+  
+          for (int j = 0; j < nums; j++) {
+              
+              possibility = (double) (n - i) / n;
+              System.out.print("No."+ i + "nums " + j + " " + "possibility " + possibility);
+              ans = testBufferedStack(stackSize, options, randomFEComlexity, ratio, conditionalSize, operationsNum, possibility);
+              if (flag) System.out.println(ans[0] + " " + ans[1]);
+              bsum += ans[0] / 1000;
+              vsum += ans[1] / 1000;
+  
+          }
+          res[i][0] = bsum / nums;
+          res[i][1] = vsum / nums;
+          System.out.println(" ");
+          System.out.println(res[i][0] + ";" + res[i][1] + "; ");
+          System.out.println(stackSize + " " + options.length + " "+ randomFEComlexity+ " " + ratio + " " + conditionalSize +" " + operationsNum + " "+ possibility);
+      }
+      System.out.println("bsum; vsum");
+      for (int i = 0; i < n; i++) {
+          System.out.println(res[i][0] + ";" + res[i][1]);
+      }
+  }
+ 
+  public static void main(String[] args) {
+      //testFeature();
+      //possibilityTest(200, 1, 0.1, 1, 100, 0);
+      //ratioTest(200, 1, 0, 1, 100, 0.9);
+  }
 }
