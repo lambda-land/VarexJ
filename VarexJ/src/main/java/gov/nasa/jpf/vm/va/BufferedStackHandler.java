@@ -9,7 +9,6 @@ import cmu.conditional.ChoiceFactory;
 import cmu.conditional.Conditional;
 import cmu.conditional.Function;
 import cmu.conditional.One;
-import cmu.conditional.VoidBiFunction;
 import de.fosd.typechef.featureexpr.FeatureExpr;
 import de.fosd.typechef.featureexpr.FeatureExprFactory;
 import gov.nasa.jpf.vm.MJIEnv;
@@ -28,6 +27,9 @@ public class BufferedStackHandler extends StackHandler implements Cloneable, ISt
 	private LinkedList<Tuple> buffer = new LinkedList<>();
 	private FeatureExpr bufferCTX = FeatureExprFactory.True();
 	private int maxStackSize;
+	
+	static public int bufferNum = 0;
+	static public int debufferNum = 0;
 
 	@Override
 	public String toString() {
@@ -67,11 +69,15 @@ public class BufferedStackHandler extends StackHandler implements Cloneable, ISt
 		Arrays.fill(locals, nullValue);
 		stack.init(new Stack(nOperands));
 		setCtx(ctx);
+		
+		bufferNum++;
 	}
 
 	public BufferedStackHandler() {
 		super();
 		maxStackSize = 0;
+		
+		bufferNum++;
 	}
 
 	@Override
@@ -134,6 +140,8 @@ public class BufferedStackHandler extends StackHandler implements Cloneable, ISt
 			*/
 		}
 		bufferCTX = FeatureExprFactory.True();
+		
+		debufferNum++;
 	}
 	
 	public void superPush(FeatureExpr ctx, Object value, boolean isRef) {

@@ -1,16 +1,21 @@
 package gov.nasa.jpf.vm.va;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
-import javax.management.RuntimeErrorException;
-
-import cmu.conditional.*;
-import gov.nasa.jpf.vm.MJIEnv;
-import gov.nasa.jpf.vm.va.IStackHandler.Type;
-import de.fosd.typechef.conditional.Choice;
+import cmu.conditional.BiFunction;
+import cmu.conditional.ChoiceFactory;
+import cmu.conditional.Conditional;
+import cmu.conditional.Function;
+import cmu.conditional.One;
+import cmu.conditional.VoidBiFunction;
 import de.fosd.typechef.featureexpr.FeatureExpr;
 import de.fosd.typechef.featureexpr.FeatureExprFactory;
+import gov.nasa.jpf.vm.MJIEnv;
 import gov.nasa.jpf.vm.Types;
+import gov.nasa.jpf.vm.va.IStackHandler.Type;
 /**
  * choice of stack implementation.
  * @author Meng Meng
@@ -21,12 +26,16 @@ class VStack implements IVStack {
     public Conditional<Entry>[] slots;
     Conditional<Integer> top;
     public FeatureExpr stackCTX;
+    
+    static public int vstackNum = 0;
 
     public VStack() {
         size = -1;
         slots = (Conditional<Entry>[]) new Conditional[0];
         top = new One<>(0);
         stackCTX = FeatureExprFactory.True();
+        
+        vstackNum++;
     }
 
     public VStack(int nOperands) {
@@ -34,6 +43,8 @@ class VStack implements IVStack {
         slots = (Conditional<Entry>[]) new Conditional[nOperands];
         top = new One<>(0);
         stackCTX = FeatureExprFactory.True();
+        
+        vstackNum++;
     }
     
     @Override

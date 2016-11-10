@@ -66,11 +66,16 @@ public class HybridStackHandler implements Cloneable, IStackHandler {
 	private final int nLocals;
 	private final int nOperands;
 	
+	static public int hybridNum = 0;
+	static public int hybridSwitchNum = 0;
+	
 	public HybridStackHandler(FeatureExpr ctx, int nLocals, int nOperands) {
 		stackHandler = createNomalStack(ctx, nLocals, nOperands);
 		stackCTX = ctx;
 		this.nLocals = nLocals;
 		this.nOperands = nOperands;
+	
+		hybridNum++;
 	}
 	
 	/**
@@ -82,6 +87,8 @@ public class HybridStackHandler implements Cloneable, IStackHandler {
 		this.nLocals = stackHandler.nLocals;
 		this.nOperands = stackHandler.nOperands;
 		this.lifted = stackHandler.lifted;
+		
+		hybridNum++;
 	}
 
 	public HybridStackHandler() {
@@ -90,6 +97,8 @@ public class HybridStackHandler implements Cloneable, IStackHandler {
 		this.nLocals = 0;
 		this.nOperands = 0;
 		this.lifted = false;
+		
+		hybridNum++;
 	}
 
 	@Override
@@ -392,6 +401,8 @@ public class HybridStackHandler implements Cloneable, IStackHandler {
 			newStackHandler.push(stackCTX, slots[i], stackHandler.isRefLocal(FeatureExprFactory.True(), i));
 		}
 		stackHandler = newStackHandler;
+		
+		hybridSwitchNum++;
 		
 	}
 

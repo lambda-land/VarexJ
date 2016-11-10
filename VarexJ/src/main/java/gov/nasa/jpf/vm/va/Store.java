@@ -13,8 +13,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.sun.org.apache.bcel.internal.generic.StackInstruction;
-
 import de.fosd.typechef.featureexpr.FeatureExpr;
 import gov.nasa.jpf.vm.va.StackHandlerFactory.SHFactory;
 
@@ -47,6 +45,9 @@ public class Store {
 
 	public static void print() {
 		try (PrintWriter writer = new PrintWriter("/home/meng/stacklog.csv", "UTF-8")){
+		    System.out.println(HybridStackHandler.hybridNum + " " + HybridStackHandler.hybridSwitchNum);
+	        System.out.println(BufferedStackHandler.bufferNum + " " + BufferedStackHandler.debufferNum);
+
 			writer.print(';');
 			for (SHFactory factory : StackHandlerFactory.SHFactory.values()) {
 			   // if(factory ==  StackHandlerFactory.SHFactory.Default) continue;
@@ -208,6 +209,7 @@ public class Store {
 	        }
 	        writer.println( dsum + " "+ bsum + " "+ hsum + " "+ hbsum + "\n" + vdsum + " " + vbsum + " " + vhsum + " "+ vhbsum);
 		} catch (FileNotFoundException | UnsupportedEncodingException e1) {
+		    System.out.println("wrong");
 			e1.printStackTrace();
 		}
 

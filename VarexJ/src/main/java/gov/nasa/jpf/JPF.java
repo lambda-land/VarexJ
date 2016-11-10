@@ -46,7 +46,6 @@ import gov.nasa.jpf.vm.VM;
 import gov.nasa.jpf.vm.VMListener;
 import gov.nasa.jpf.vm.va.BufferedStackHandler;
 import gov.nasa.jpf.vm.va.HybridStackHandler;
-import gov.nasa.jpf.vm.va.HybridStackHandler.LiftedStack;
 import gov.nasa.jpf.vm.va.HybridStackHandler.NormalStack;
 import gov.nasa.jpf.vm.va.OneStackHandler;
 import gov.nasa.jpf.vm.va.StackHandler;
@@ -350,7 +349,8 @@ public class JPF implements Runnable {
 			} else if (stackHandlerFactory.equals(StackHandler.class.getSimpleName())) {
 				StackHandlerFactory.activateDefaultStackHandler();
 			} else {
-				StackHandlerFactory.activateHybridStackHandler();
+                //StackHandlerFactory.activateHybridStackHandler();
+                StackHandlerFactory.activateHybridBufferedStackHandler();
 			}
       
       // Set the ChoiceFactory
