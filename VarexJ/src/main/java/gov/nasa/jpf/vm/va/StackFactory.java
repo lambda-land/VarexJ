@@ -3,15 +3,13 @@ package gov.nasa.jpf.vm.va;
 import java.util.ArrayList;
 import java.util.List;
 
-import de.fosd.typechef.featureexpr.FeatureExpr;
-
 public class StackFactory {
 	public enum VSFactory {
 		CStack, VStack, Buffered
 	}
 
-	static VFactory f = new CStackFactory();
-	//static VFactory f = new VStackFactory();
+	//static VFactory f = new CStackFactory();
+	static VFactory f = new VStackFactory();
 	//static VFactory f = new BufferedStackFactory();
 	
 	public static List<Object> asParameter() {

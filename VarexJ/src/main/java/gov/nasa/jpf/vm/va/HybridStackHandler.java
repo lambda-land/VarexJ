@@ -87,7 +87,7 @@ public class HybridStackHandler implements Cloneable, IStackHandler {
 		this.nLocals = stackHandler.nLocals;
 		this.nOperands = stackHandler.nOperands;
 		this.lifted = stackHandler.lifted;
-		
+		//System.out.println("copying " + this.lifted);
 		hybridNum++;
 	}
 
@@ -144,6 +144,7 @@ public class HybridStackHandler implements Cloneable, IStackHandler {
 
 	@Override
 	public void pushLongLocal(FeatureExpr ctx, int index) {
+	    checkCTX(ctx);
 		stackHandler.pushLongLocal(ctx, index);
 	}
 
@@ -155,6 +156,7 @@ public class HybridStackHandler implements Cloneable, IStackHandler {
 
 	@Override
 	public void storeLongOperand(FeatureExpr ctx, int index) {
+	    checkCTX(ctx);
 		stackHandler.storeLongOperand(ctx, index);
 	}
 

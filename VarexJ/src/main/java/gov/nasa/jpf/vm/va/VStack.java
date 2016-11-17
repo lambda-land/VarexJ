@@ -32,7 +32,7 @@ class VStack implements IVStack {
     public VStack() {
         size = -1;
         slots = (Conditional<Entry>[]) new Conditional[0];
-        top = new One<>(0);
+        top = One.ZERO;
         stackCTX = FeatureExprFactory.True();
         
         vstackNum++;
@@ -40,8 +40,8 @@ class VStack implements IVStack {
 
     public VStack(int nOperands) {
         size = -1;
-        slots = (Conditional<Entry>[]) new Conditional[nOperands];
-        top = new One<>(0);
+        slots = (Conditional<Entry>[]) new Conditional[nOperands*5/4+3];
+        top = One.ZERO;
         stackCTX = FeatureExprFactory.True();
         
         vstackNum++;
@@ -203,7 +203,7 @@ class VStack implements IVStack {
 
     @Override
     public boolean isRef(FeatureExpr ctx, int offset) {
-    	//printStack();
+    	//printStack("isRef " + ctx);
         return peek(ctx, offset).map(new Function<Entry, Boolean>() {
             public Boolean apply(Entry e) {
                 if (e == null) {
@@ -390,7 +390,7 @@ class VStack implements IVStack {
     @SuppressWarnings("unchecked")
     @Override
     public void push(final FeatureExpr ctx, final Object value, final boolean isRef) {
-        //printStack("push " + stackCTX + "\n" + ctx + " " + value);
+        //printStack("push " + ctx + " " + value);
 
         //if(ctx.isContradiction()) { System.out.println("push FALSE"); return; }
         //printStack("ha");
@@ -532,16 +532,15 @@ class VStack implements IVStack {
     public void pop(FeatureExpr ctx, int n) {
         //if(ctx.isContradiction()) System.out.println("pop FALSE");
         //printStack("pop " + ctx + " " + n);
-
-        simpleCleanup();
         
         if(ctx.equivalentTo(stackCTX)) ctx = FeatureExprFactory.True();
         
         for (int i = 0; i < n; i++) {
         	//printStack("pop " + ctx + " " + n);
+            simpleCleanup();
             popHelper(ctx);
-            cleanup();
         }
+        cleanup();
     }
     
     private Conditional<Entry> pop(final FeatureExpr ctx) {
@@ -704,7 +703,7 @@ class VStack implements IVStack {
     
     
     private Conditional<Entry> peek(final FeatureExpr ctx, int offset) {
-        
+        //printStack("peek " + ctx);
         if (size < offset) {
             return new One<>(new Entry(-1, false));
         }
@@ -908,12 +907,16 @@ class VStack implements IVStack {
      * .. A B => .. B A B
      */
     public void dup_x1(FeatureExpr ctx) {
-        Conditional<Entry> b = pop(ctx);
-        Conditional<Entry> a = pop(ctx);
+//        Conditional<Entry> b = pop(ctx);
+//        Conditional<Entry> a = pop(ctx);
+//        pushEntry(ctx, b);
+//        pushEntry(ctx, a);
+//        pushEntry(ctx, b);
+        simpleCleanup();
+        Conditional<Entry> b = peek(ctx, 0);
+        swap(ctx);
         pushEntry(ctx, b);
-        pushEntry(ctx, a);
-        pushEntry(ctx, b);
-
+        
     }
 
     /**
@@ -952,7 +955,7 @@ class VStack implements IVStack {
      * .. A B => .. A B A B
      */
     public void dup2(FeatureExpr ctx) {
-        cleanup();
+        simpleCleanup();
         fillholes(ctx, size);
         fillholes(ctx, size - 1);
         Conditional<Entry> b = slots[size].simplify(ctx);
@@ -966,7 +969,7 @@ class VStack implements IVStack {
      * .. A => .. A A
      */
     public void dup(FeatureExpr ctx) {
-        cleanup();
+        simpleCleanup();
         fillholes(ctx, size);
         Conditional<Entry> a = slots[size].simplify(ctx);
         pushEntry(ctx, a);
@@ -990,7 +993,7 @@ class VStack implements IVStack {
      * .. A B => .. B A
      */
     public void swap(FeatureExpr ctx) {
-        cleanup();
+        simpleCleanup();
 
         fillholes(ctx, size);
         fillholes(ctx, size - 1);
@@ -1051,6 +1054,7 @@ class VStack implements IVStack {
         if (s != null) {
             System.out.println(s);
         }
+        System.out.println("stackCtx " + stackCTX);
         for (int i = 0; i <= size; ++i) {
             System.out.println(slots[i]);
         }

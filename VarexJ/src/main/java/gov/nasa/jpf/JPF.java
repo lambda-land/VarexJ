@@ -352,7 +352,12 @@ public class JPF implements Runnable {
                 //StackHandlerFactory.activateHybridStackHandler();
                 StackHandlerFactory.activateHybridBufferedStackHandler();
 			}
-      
+			
+			//StackHandlerFactory.activateDefaultStackHandler();
+			//StackHandlerFactory.activateHybridStackHandler();
+			StackHandlerFactory.activateBufferedStackHandler();
+			//StackHandlerFactory.activateHybridBufferedStackHandler();
+			
       // Set the ChoiceFactory
       String choice = config.getString("choice", Factory.TreeChoice.toString());
       ChoiceFactory.setDefault(Factory.valueOf(choice));

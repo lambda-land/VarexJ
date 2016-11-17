@@ -11,16 +11,18 @@ import de.fosd.typechef.featureexpr.FeatureExprFactory;
 import gov.nasa.jpf.vm.va.IStackHandler.Type;
 import gov.nasa.jpf.vm.va.StackHandlerFactory.SHFactory;
 
+
+
 public class TestAll {
     public static boolean verbose = false;
     public static long testStackWith(IStackHandler stack, int operationsNum, FeatureExpr[] fes, String[] operations, Conditional<Integer>[] conditionalValues) {
-        for (int i = 0; i < operationsNum / 2; i++) stack.push(FeatureExprFactory.True(), new One<>(1), false);
+        for (int i = 0; i < operationsNum / 2; i++) stack.push(FeatureExprFactory.True(), One.ONE, false);
         long start = System.nanoTime();
         for (int i = 0; i < operationsNum; i++) {
             if (operations[i].equals("push")) {
                 stack.push(fes[i], conditionalValues[i], false);
-//                if(i % 2 == 0) {
-//                    stack.peek(fes[(int)(Math.random()*fes.length)], (int)(Math.random()*3));
+//                if(i % 10 == 0) {
+//                    stack.peek(fes[(int)(Math.random()*fes.length)], (int)(Math.random()*2));
 //                    stack.isRef(fes[i], 0);
 //                }
             } else {
@@ -28,6 +30,7 @@ public class TestAll {
             }
             
         }
+        stack.pop(FeatureExprFactory.True());
         long end = System.nanoTime();
         long duration = (end - start);
         return duration;
@@ -48,6 +51,9 @@ public class TestAll {
             Main.GenValues(options, pushNum, ratio, operations, conditionalValues);
         
             // generate nextFe with possibility
+       
+         
+            
             List<Integer> nextFe = new ArrayList<>();
             for (int i = 0; i < operationsNum * possibility; i++) {
                 nextFe.add(1);
@@ -57,7 +63,10 @@ public class TestAll {
             }
         
             Collections.shuffle(nextFe);
-            
+            if(options.length == 0) {
+            for(int i = 0; i < fes.length; i++)
+                fes[i] = FeatureExprFactory.True();
+            }else {
             for (int i = 0; i < operationsNum; i++) {
                 if (i == 0)
                     fes[0] = fe;
@@ -72,14 +81,14 @@ public class TestAll {
                     }
                 }
             }
+            }
             if (verbose) {
                 for (int i = 0; i < operationsNum; i++) {
                     System.out.println( operations[i] + " " + fes[i] + " " + nextFe.get(i) + " " + conditionalValues[i]);
                 }
                   
               }
-//            for(int i = 0; i < fes.length; i++)
-//                fes[i] = FeatureExprFactory.True();
+
             StackFactory.activateCStack();
             long[] ret = new long[8];
             for (SHFactory factory : StackHandlerFactory.SHFactory.values()) {
@@ -93,7 +102,7 @@ public class TestAll {
                    minTime = Math.min(testStackWith(checkStack, operationsNum, fes, operations, conditionalValues), minTime);
                }
                ret[factory.ordinal()] = minTime; 
-               System.out.println("c" + minTime);
+               System.out.println("c " + minTime);
            }
             
           
@@ -110,7 +119,7 @@ public class TestAll {
                    minTime = Math.min(testStackWith(checkStack, operationsNum, fes, operations, conditionalValues), minTime);
                }
                ret[factory.ordinal() + 4] = minTime;
-               System.out.println("v" + minTime);
+               System.out.println("v " + minTime);
            }
             
             
@@ -124,7 +133,7 @@ public class TestAll {
 
         public static void testFeature(int stackSize, int randomFEComlexity, double ratio, int conditionalSize, int operationsNum, double possibility) {
             System.setProperty("FEATUREEXPR", "BDD");
-            int n = 20, m = 8, nums = 20;
+            int n = 20, m = 8, nums = 100;
             
             double[][] res = new double[n + 1][m + 1];
             long[] ans = new long[8];
@@ -135,10 +144,10 @@ public class TestAll {
                 for (int j = 0; j < nums; j++) {
                     System.out.print("No."+ i + "nums " + j + " ");
                     
-                    NonStaticFeature[] options = Main.getOptions(2 + i);
+                    NonStaticFeature[] options = Main.getOptions(i);
                     
                     ans = testBufferedStack(stackSize, options, randomFEComlexity, ratio, conditionalSize, operationsNum, possibility);
-                    if (Main.flag) System.out.println(ans[0] + " " + ans[1]);
+                    if (verbose) System.out.println(ans[0] + " " + ans[1]);
                     for(int k = 0; k < ans.length; k++) {
                         res[i][k] += ans[k]/1000;
                     }
@@ -154,13 +163,13 @@ public class TestAll {
             }
             System.out.println("CDefault;CHybrid;CBuffered;CHybridBuffered;VDefault;VHybrid;VBuffered;VHybridBuffered");
             
-            for (int i = 0; i < n; i++) {
+            for (int i = 0; i < res.length; i++) {
                for(int j = 0; j < ans.length; j++) {
                    System.out.print(res[i][j]+";");
                }
                System.out.println();
             }
-            for (int i = 0; i < n; i++) {
+            for (int i = 0; i < res.length; i++) {
                 for(int j = 0; j < ans.length; j++) {
                     if(res[i][j] == 0.0) continue;
                     System.out.print(res[i][j]+";");
@@ -171,20 +180,22 @@ public class TestAll {
         
         public static void possibilityTest(int stackSize, int randomFEComlexity, double ratio, int conditionalSize, int operationsNum, double possibility) {
             System.setProperty("FEATUREEXPR", "BDD");
-            int n = 50, m = 8, nums = 50;
+            int n = 20, m = 8, nums = 100;
             NonStaticFeature[] options = Main.getOptions(6);
            
             double[][] res = new double[n + 1][m + 1];
             long[] ans = new long[8];
        
-            for (int i = 0; i <= 10; i++) {
+            for (int i = 0; i <= n; i++) {
                 System.out.println("No." + i);
         
                 for (int j = 0; j < nums; j++) {
                     System.out.print("No."+ i + "nums " + j + " ");
                     
+                    
                     possibility = (double) (n - i) / n;
-                    System.out.print("No."+ i + "nums " + j + " " + "possibility " + possibility);
+                    //possibility = 0;
+                    System.out.println("possibility " + possibility);
                     ans = testBufferedStack(stackSize, options, randomFEComlexity, ratio, conditionalSize, operationsNum, possibility);
                     if (Main.flag) System.out.println(ans[0] + " " + ans[1]);
                     for(int k = 0; k < ans.length; k++) {
@@ -202,13 +213,13 @@ public class TestAll {
             }
             System.out.println("CDefault;CHybrid;CBuffered;CHybridBuffered;VDefault;VHybrid;VBuffered;VHybridBuffered");
             
-            for (int i = 0; i < n; i++) {
+            for (int i = 0; i < res.length; i++) {
                for(int j = 0; j < ans.length; j++) {
                    System.out.print(res[i][j]+";");
                }
                System.out.println();
             }
-            for (int i = 0; i < n; i++) {
+            for (int i = 0; i < res.length; i++) {
                 for(int j = 0; j < ans.length; j++) {
                     if(res[i][j] == 0.0) continue;
                     System.out.print(res[i][j]+";");
@@ -216,10 +227,54 @@ public class TestAll {
                 System.out.println();
              }
         }
+       public static void testBuffer() {
+           StackHandlerFactory.activateBufferedStackHandler();
+           IStackHandler bstack = StackHandlerFactory.createStack(FeatureExprFactory.True(),10, 10);
+           Long a = new Long(1000001);
+           Long b = new Long(22222222);
+           
+           bstack.push(FeatureExprFactory.True(), a, false);
+           bstack.push(FeatureExprFactory.True(), b, true);
+           System.out.println(bstack.isRef(FeatureExprFactory.True(), 1)); //false
+           
+           StackHandlerFactory.activateDefaultStackHandler();
+           IStackHandler cstack = StackHandlerFactory.createStack(FeatureExprFactory.True(),10, 10);
+           cstack.push(FeatureExprFactory.True(), a, false);
+           cstack.push(FeatureExprFactory.True(), b, true);
+           System.out.println(cstack.isRef(FeatureExprFactory.True(), 1));//true
+           
+       }
+       public static void testBufferPeek() {
+           StackHandlerFactory.activateBufferedStackHandler();
+           IStackHandler bstack = StackHandlerFactory.createStack(FeatureExprFactory.True(),10, 10);
+           
+           StackHandlerFactory.activateDefaultStackHandler();
+           IStackHandler cstack = StackHandlerFactory.createStack(FeatureExprFactory.True(),10, 10);
+           
+           FeatureExpr t = FeatureExprFactory.True();
+           
+           Long a = new Long(0);
+           Long b = new Long(-1);
+           
+           Integer c = new Integer(333);
+           
+           //bstack.push(t, c);
+           bstack.push(t, c);
+           bstack.push(t, b);
+           System.out.println(bstack.peek(FeatureExprFactory.True(), 1));//true
+
+           //cstack.push(t, c);
+           cstack.push(t, c);
+           cstack.push(t, b);
+           System.out.println(cstack.peek(FeatureExprFactory.True(), 1));//true
+
+           
+       }
        
-        public static void main(String[] args) {
-            testFeature(200, 1, 0.1, 1, 200, 0.90);
-           // possibilityTest(200, 5, 0.1, 1, 200, 0);
-            //ratioTest(200, 1, 0, 1, 100, 0.9);
+       public static void main(String[] args) {
+           //testFeature(500, 1, 0.1, 1, 200, 0.90);
+           //possibilityTest(500, 1, 0.1, 1, 500, 0);
+           //ratioTest(200, 1, 0, 1, 100, 0.9);
+           testBuffer();
         }
 }

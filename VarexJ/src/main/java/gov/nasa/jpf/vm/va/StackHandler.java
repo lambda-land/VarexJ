@@ -13,7 +13,6 @@ import cmu.conditional.VoidBiFunction;
 import de.fosd.typechef.featureexpr.FeatureExpr;
 import de.fosd.typechef.featureexpr.FeatureExprFactory;
 import gov.nasa.jpf.vm.MJIEnv;
-import gov.nasa.jpf.vm.Types;
 
 /**
  * Stack implementation where locals are separated from stack.<br>
@@ -29,7 +28,7 @@ public class StackHandler implements Cloneable, IStackHandler {
   protected Conditional<Entry>[] locals;
 
   //protected Conditional<Stack> stack;
-  protected IVStack stack = StackFactory.createVStack();
+  protected IVStack stack;
   
   protected int length = 0;
 

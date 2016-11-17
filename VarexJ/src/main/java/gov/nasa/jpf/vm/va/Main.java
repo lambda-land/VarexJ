@@ -43,6 +43,8 @@ public class Main {
   }
   
   public static FeatureExpr randomFEComlexity(NonStaticFeature[] options, int size) {
+      if(options.length == 0) return FeatureExprFactory.True();
+      if(options.length == 1) return Math.random() < 0.5 ? options[0].a : options[0].a.not();
       if (size == 0) return FeatureExprFactory.True();
       if (options.length == size)
           return randomFEGen(options);
@@ -402,7 +404,7 @@ public class Main {
   public static void possibilityTest(int stackSize, int randomFEComlexity, double ratio, int conditionalSize, int operationsNum, double possibility) {
       System.setProperty("FEATUREEXPR", "BDD");
       int n = 50, m = 2, nums = 20;
-      NonStaticFeature[] options = getOptions(10);
+      NonStaticFeature[] options = getOptions(5);
      
   
       double[][] res = new double[n + 1][m + 1];

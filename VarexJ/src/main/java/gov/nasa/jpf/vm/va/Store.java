@@ -19,6 +19,7 @@ import gov.nasa.jpf.vm.va.StackHandlerFactory.SHFactory;
 public class Store {
 
 	private static boolean verbose = false;
+	private static boolean flag = false;
 
 	private static Map<MeasuringStackHandler, List<LogEntry>> entries = new HashMap<>();
 
@@ -45,21 +46,23 @@ public class Store {
 
 	public static void print() {
 		try (PrintWriter writer = new PrintWriter("/home/meng/stacklog.csv", "UTF-8")){
+		    PrintWriter out = new PrintWriter("/home/meng/seq.csv", "UTF-8");
 		    System.out.println(HybridStackHandler.hybridNum + " " + HybridStackHandler.hybridSwitchNum);
-	        System.out.println(BufferedStackHandler.bufferNum + " " + BufferedStackHandler.debufferNum);
+	        System.out.println(BufferedStackHandler.bufferNum + " " + BufferedStackHandler.debufferNum + " " + BufferedStackHandler.flagNum);
+	        System.out.println("VStack" + VStack.vstackNum);
 
 			writer.print(';');
 			for (SHFactory factory : StackHandlerFactory.SHFactory.values()) {
 			   // if(factory ==  StackHandlerFactory.SHFactory.Default) continue;
 
-               // if(factory ==  StackHandlerFactory.SHFactory.Default || factory ==  StackHandlerFactory.SHFactory.Hybid || factory ==  StackHandlerFactory.SHFactory.Buffered) continue;
+               if(factory ==  StackHandlerFactory.SHFactory.Default || factory ==  StackHandlerFactory.SHFactory.Hybid || factory ==  StackHandlerFactory.SHFactory.Buffered) continue;
 				writer.print(factory);
 				writer.print(';');
 			}
 	
 			for (SHFactory factory : StackHandlerFactory.SHFactory.values()) {
 		        //if(factory ==  StackHandlerFactory.SHFactory.Default) continue;
-			    //if(factory ==  StackHandlerFactory.SHFactory.Default || factory ==  StackHandlerFactory.SHFactory.Hybid || factory ==  StackHandlerFactory.SHFactory.Buffered) continue;
+			    if(factory ==  StackHandlerFactory.SHFactory.Default || factory ==  StackHandlerFactory.SHFactory.Hybid || factory ==  StackHandlerFactory.SHFactory.Buffered) continue;
 				writer.print("V" + factory);
 				writer.print(';');
 			}
@@ -68,20 +71,22 @@ public class Store {
 			System.out.println("reexecute stack operations");
 			
 			for (List<LogEntry> entry : entries.values()) {
-				if (verbose) {
-					System.out.println(entry.get(0).methodName);
+				if (flag) {
+					out.println(entry.get(0).methodName);
 					for (LogEntry logEntry : entry) {
-						System.out.println(logEntry.stackInstruction + Arrays.toString(logEntry.args));
+						out.println(logEntry.stackInstruction + Arrays.toString(logEntry.args));
 					}
-					System.out.println();
+					out.println();
 				}
+				
 				StackFactory.activateCStack();
 				Object[] initArgs = entry.get(0).args;
 				//if(entry.get(0).methodName.equals("<init>") || entry.get(0).methodName.equals("<clinit>")) continue;
 				Measurement measurement = new Measurement(entry.get(0).methodName);
 				measures.add(measurement);
 				for (SHFactory factory : StackHandlerFactory.SHFactory.values()) {
-				     //if(factory ==  StackHandlerFactory.SHFactory.Default) continue;
+				    //if(factory ==  StackHandlerFactory.SHFactory.Default) continue;
+				    //if(factory ==  StackHandlerFactory.SHFactory.Default || factory ==  StackHandlerFactory.SHFactory.Hybid) continue;
 				    //if(factory ==  StackHandlerFactory.SHFactory.Default || factory ==  StackHandlerFactory.SHFactory.Hybid || factory ==  StackHandlerFactory.SHFactory.Buffered) continue;
 					StackHandlerFactory.setFactory(factory);
 					IStackHandler checkStack = StackHandlerFactory.createStack2((FeatureExpr) initArgs[0],
@@ -104,28 +109,32 @@ public class Store {
 						}
 					}
 					
-					long start = System.nanoTime();
-					for (LogEntry logEntry : entry) {
-						if (logEntry.stackInstruction == null) {
-							// case constructor
-							continue;
-						}
-						try {
-							if (verbose) {
-								System.out.print("invoke: " + logEntry.stackInstruction.getName());
-								System.out.println(" args: " + Arrays.toString(logEntry.args));
-							}
-							logEntry.stackInstruction.invoke(checkStack, logEntry.args);
-						} catch (SecurityException | IllegalAccessException | InvocationTargetException e) {
-							start = 0;
-							break;
-						}
-					}
-					long end = System.nanoTime();
-					long duration = (end - start);
-					if(start == 0) duration  = 0;
-					measurement.measurement[factory.ordinal()] = duration;
-					
+					long minvalue = Long.MAX_VALUE;
+	                for(int i = 0; i < 10; i++) {
+	                    long start = System.nanoTime();
+    					for (LogEntry logEntry : entry) {
+    						if (logEntry.stackInstruction == null) {
+    							// case constructor
+    							continue;
+    						}
+    						try {
+    							if (verbose) {
+    								System.out.print("invoke: " + logEntry.stackInstruction.getName());
+    								System.out.println(" args: " + Arrays.toString(logEntry.args));
+    							}
+    							logEntry.stackInstruction.invoke(checkStack, logEntry.args);
+    						} catch (SecurityException | IllegalAccessException | InvocationTargetException e) {
+    							start = 0;
+    							break;
+    						}
+    					}
+    					long end = System.nanoTime();
+    					long duration = (end - start);
+    					if(start == 0) duration  = 0;
+    					minvalue = Math.min(minvalue, duration);
+    					
+    				}
+	                measurement.measurement[factory.ordinal()] = minvalue;  
 				}
 				StackFactory.activateVStack();
 				initArgs = entry.get(0).args;
@@ -133,8 +142,9 @@ public class Store {
 			    //measurement = new Measurement(entry.get(0).methodName);
 				//measures.add(measurement);
 				for (SHFactory factory : StackHandlerFactory.SHFactory.values()) {
-				     //if(factory ==  StackHandlerFactory.SHFactory.Default) continue;
-				    // if(factory ==  StackHandlerFactory.SHFactory.Default || factory ==  StackHandlerFactory.SHFactory.Hybid || factory ==  StackHandlerFactory.SHFactory.Buffered) continue;
+				    //if(factory ==  StackHandlerFactory.SHFactory.Default) continue;
+                    //if(factory ==  StackHandlerFactory.SHFactory.Default || factory ==  StackHandlerFactory.SHFactory.Hybid) continue;
+				    //if(factory ==  StackHandlerFactory.SHFactory.Default || factory ==  StackHandlerFactory.SHFactory.Hybid || factory ==  StackHandlerFactory.SHFactory.Buffered) continue;
 					StackHandlerFactory.setFactory(factory);
 					IStackHandler checkStack = StackHandlerFactory.createStack2((FeatureExpr) initArgs[0],
 							(int) initArgs[1], (int) initArgs[2]);
@@ -155,27 +165,32 @@ public class Store {
 						}
 					}
 					
-					long start = System.nanoTime();
-					for (LogEntry logEntry : entry) {
-						if (logEntry.stackInstruction == null) {
-							// case constructor
-							continue;
-						}
-						try {
-							if (verbose) {
-								System.out.print("invoke: " + logEntry.stackInstruction.getName());
-								System.out.println(" args: " + Arrays.toString(logEntry.args));
-							}
-							logEntry.stackInstruction.invoke(checkStack, logEntry.args);
-						} catch (SecurityException | IllegalAccessException | InvocationTargetException e) {
-							start = 0;
-							break;
-						}
-					}
-					long end = System.nanoTime();
-					long duration = (end - start);
-					if(start == 0) duration  = 0;
-					measurement.measurement[factory.ordinal() + 4] = duration;
+                    long minvalue = Long.MAX_VALUE;
+                    for(int i = 0; i < 10; i++) {
+                        long start = System.nanoTime();
+                        for (LogEntry logEntry : entry) {
+                            if (logEntry.stackInstruction == null) {
+                                // case constructor
+                                continue;
+                            }
+                            try {
+                                if (verbose) {
+                                    System.out.print("invoke: " + logEntry.stackInstruction.getName());
+                                    System.out.println(" args: " + Arrays.toString(logEntry.args));
+                                }
+                                logEntry.stackInstruction.invoke(checkStack, logEntry.args);
+                            } catch (SecurityException | IllegalAccessException | InvocationTargetException e) {
+                                start = 0;
+                                break;
+                            }
+                        }
+                        long end = System.nanoTime();
+                        long duration = (end - start);
+                        if(start == 0) duration  = 0;
+                        minvalue = Math.min(minvalue, duration);
+                        
+                    }
+                    measurement.measurement[factory.ordinal()+4] = minvalue;  
 					
 				}
 

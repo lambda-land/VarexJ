@@ -9,7 +9,7 @@ import gov.nasa.jpf.vm.StackFrame;
 public class StackHandlerFactory {
 
 	public enum SHFactory {
-		Default, Hybid, Buffered, HybridBuffered //, VStack 
+	    Default, Hybid, Buffered, HybridBuffered //, VStack 
 	}
 	
 	public static List<Object> asParameter() {
@@ -47,6 +47,7 @@ public class StackHandlerFactory {
 	//static Factory f = new DefaultStackHandlerFactory();
 	//static Factory f = new HybridStackHandlerFactory();
 	static Factory f = new HybridStackHandlerBufferdFactory();
+	//static Factory f = new HybridStackHandlerBufferdFactory();
 	//static Factory f = new VStackHandlerFactory();
 
 	public static Factory getCurrent() {
@@ -58,11 +59,11 @@ public class StackHandlerFactory {
 	}
 	
 	public static IStackHandler createStack(FeatureExpr ctx, int nLocals, int nOperands, StackFrame frame) {
-		//return f.createStack(ctx, nLocals, nOperands);
+		return f.createStack(ctx, nLocals, nOperands);
 		//return new VStackHandler(ctx, nLocals, nOperands);
 		//return new HybridStackHandler(ctx, nLocals, nOperands);
 		//return new StackHandler(ctx, nLocals, nOperands);
-		return new MeasuringStackHandler(ctx, nLocals, nOperands, frame);
+		//return new MeasuringStackHandler(ctx, nLocals, nOperands, frame);
 	}
 	
 	public static IStackHandler createStack2(FeatureExpr ctx, int nLocals, int nOperands) {
